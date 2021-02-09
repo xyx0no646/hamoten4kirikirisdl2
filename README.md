@@ -83,4 +83,5 @@ KTLに関する最新版等の情報については、 http://www.boleros.x0.com
 
 ***
 
-&copy;Studio F#.
+&copy;Studio F#. 
+ぷり@xyx0no646
