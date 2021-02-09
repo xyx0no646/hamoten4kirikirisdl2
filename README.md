@@ -16,6 +16,9 @@
 * 目パチをするキャラグラフィック（立ち絵）
 * 閲覧済みイベントCG鑑賞モード
 
+吉里吉里SDL2については、以下のURLをご参照ください。
+https://github.com/uyjulian/krkrsdl2
+
 ***
 
 ## 配布について
@@ -58,12 +61,12 @@ KTLに関する最新版等の情報については、 http://www.boleros.x0.com
 
 なお、配布アーカイブに同梱されるもののうち、次に掲げるものの諸権利は原配付者に帰属し、ライセンスも当該権利者の定めるところに従います：
 
-* /krkr.eXe
-* /pluginフォルダ内のすべてのファイル
-* /data/systemフォルダ内のすべてのファイル
-* /data/startup.tjs
-* /data/scenario/KagPluginsフォルダ内のすべてのファイル（以上、&copy;W.Dee）
-* /data/sysxmod_novel/_krplugin/ktl_local_files.dll（&copy;Bolero MURAKAMI）
+* src/data/pluginフォルダ内のすべてのファイル
+* src/data/systemフォルダ内のすべてのファイル
+* src/data/startup.tjs
+* src/data/scenario/KagPluginsフォルダ内のすべてのファイル（以上、&copy;W.Dee）
+* src/data/sysxmod_novel/_krplugin/ktl_local_files.dll（&copy;Bolero MURAKAMI）
+* src/data/ipag.ttf(IPAexゴシック &copy;独立行政法人 情報処理推進機構)
 
 ただし次に掲げるものについては、2015年10月現在配布元が不明なため、暫定的に鱧天と同等のライセンス的なもの（ただし著作権を除く）を適用するものとします：
 
