@@ -1,0 +1,16 @@
+/******************************************************************************
+	hackSystemManager.tjs
+	
+	SystemManagerのオーバーライド
+*******************************************************************************/
+
+// 環境設定保存変数の追加分
+if (sf.userconfig.charSpeed2 === void) {
+	// 未読文字速度
+	sf.userconfig.charSpeed2 = 45;
+	
+	// オートモード関連
+	sf.userconfig.amCharSpeed = 60;
+	sf.userconfig.amLineWait  = 300;
+	sf.userconfig.amPageWait  = 1500;
+}

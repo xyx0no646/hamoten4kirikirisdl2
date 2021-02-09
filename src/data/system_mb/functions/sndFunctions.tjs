@@ -1,0 +1,161 @@
+/******************************************************************************
+	functions/sndFunctions.tjs
+	サウンド関連関数群
+*******************************************************************************/
+
+//==============================================================================
+// 格納用辞書配列
+
+var sndfunc = %[];
+var sndavail = %[];
+
+//==============================================================================
+// メニュー用ファイルの存否を確認しておく
+
+var menuSounds = ["menu_select", "menu_cancel", "menu_decide", "menu_open", "menu_playstart"];
+
+for (tf.i=0; tf.i<menuSounds.count; tf.i++) {
+	var path = sysfunc.getPathTo("sounds", "sound/%s.wav".sprintf(menuSounds[tf.i]));
+	sndavail[menuSounds[tf.i]] = Storages.isExistentStorage(path);
+	dm(path, sndavail[menuSounds[tf.i]]);
+}
+
+//==============================================================================
+// 一般
+
+//------------------------------------------------------------------------------
+// 警告音
+
+sndfunc.seNotice = function(buf=5)
+{
+	if (se[buf].currentVolume < 1) {
+		return;
+	}
+	
+} incontextof kag;
+
+//------------------------------------------------------------------------------
+// 選択音を鳴らす
+
+sndfunc.seSelect = function(buf=6)
+{
+	if (se[buf].currentVolume < 1 || !sndavail["menu_select"]) {
+		return;
+	}
+	
+	se[buf].play(%[
+		storage : "menu_select",
+		loop : false
+	]);
+} incontextof kag;
+
+//------------------------------------------------------------------------------
+// 決定音を鳴らす
+
+sndfunc.seDecide = function(buf=5)
+{
+	if (se[buf].currentVolume < 1 || !sndavail["menu_decide"]) {
+		return;
+	}
+	
+	se[buf].play(%[
+		storage : "menu_decide",
+		loop : false
+	]);
+} incontextof kag;
+
+sndfunc.seDeside = function(buf=5)
+{
+	sndfunc.seDecide(buf);
+} incontextof kag;
+
+//------------------------------------------------------------------------------
+// ゲームスタート
+
+sndfunc.sePlayStart = function(buf=5)
+{
+	if (se[buf].currentVolume < 1 || !sndavail["menu_playstart"]) {
+		return;
+	}
+	
+	se[buf].play(%[
+		storage : "menu_playstart",
+		loop : false
+	]);
+} incontextof kag;
+
+//------------------------------------------------------------------------------
+// キャンセル音を鳴らす
+
+sndfunc.seCancel = function(buf=5)
+{
+	if (se[buf].currentVolume < 1 || !sndavail["menu_cancel"]) {
+		return;
+	}
+	
+	se[buf].play(%[
+		storage : "menu_cancel",
+		loop : false
+	]);
+} incontextof kag;
+
+//------------------------------------------------------------------------------
+// 一般的なピッという音を鳴らす
+
+sndfunc.sePop = function(buf=5)
+{
+	return;
+} incontextof kag;
+
+//------------------------------------------------------------------------------
+// メニュー入力を促す
+
+sndfunc.seMenuStart = function(buf=7)
+{
+	if (se[buf].currentVolume < 1 || !sndavail["menu_open"]) {
+		return;
+	}
+	
+	se[buf].play(%[
+		storage : "menu_open",
+		loop : false
+	]);
+} incontextof kag;
+
+//------------------------------------------------------------------------------
+// 環境音バッファを特定する
+
+sndfunc.setEnvSoundBuffer = function(buf)
+{
+	return (buf !== void) ? buf : MBSystemPref.envSoundBuffer;
+} incontextof kag;
+
+//------------------------------------------------------------------------------
+// わたされた効果音が指定バッファで再生中のものと同じかどうかを判定して返す
+
+sndfunc.isSameSoundInBuffer = function(buf, file)
+{
+	if (buf === void) {
+		buf = MBSystemPref.envSoundBuffer;
+	}
+	
+	if (buf < 0 || buf >= kag.se.count) {
+		return false;
+	}
+	
+	var cs = kag.se[buf].currentStorage.split(".");
+	var ns = file.split(".");
+	
+	return (cs[0] == ns[0]);
+} incontextof kag;
+
+//------------------------------------------------------------------------------
+// わたされたBGMが再生中のものと同じかどうかを判定して返す
+
+sndfunc.isSameBgm = function(file)
+{
+	var cs = kag.bgm.currentStorage.split(".");
+	var ns = file.split(".");
+	
+	return (cs[0] == ns[0]);
+} incontextof kag;

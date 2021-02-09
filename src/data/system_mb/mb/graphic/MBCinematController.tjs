@@ -1,0 +1,235 @@
+/******************************************************************************
+	MBCinematController.tjs v1.1
+*******************************************************************************/
+
+class MBCinematController
+{
+	var window;	// ウィンドウ参照
+	
+	var strMaskColor = MBColors.cinemat.mask;	// マスクカラー
+	
+	var objMaskSettings = %[
+		left    :   0,
+		top     :  50,
+		width   : 800,
+		height  : 450,
+		visible : false
+	];
+	
+	var fore;	// 表ページ
+	var back;	// 裏ページ
+	
+	
+	function MBCinematController(win)
+	{
+		// コンストラクタ
+		
+		window = win;
+		
+		fore = new MBComponentLayer(window, window.fore.base);
+		fore.name         = 'シネマット表';
+		fore.hitType      = htMask;
+		fore.hitThreshold = 256;
+		fore.loadImages(%[storage : 'clearmat']);
+		fore.setSizeToImageSize();
+		fore.setPos(0, 0);
+		fore.absolute = MBLayerAbs.cinemat;
+		fore.opacity  = 255;
+		fore.visible  = true;
+		
+		back = new MBComponentLayer(window, window.back.base);
+		back.name         = 'シネマット裏';
+		back.hitType      = htMask;
+		back.hitThreshold = 256;
+		back.absolute     = fore.absolute;
+		back.opacity      = 255;
+		back.visible      = true;
+		
+		fore.setCompLayer(back);
+		back.setCompLayer(fore);
+	}
+	
+	function finalize()
+	{
+		// ファイナライザ
+		
+		invalidate fore if (fore !== void);
+		invalidate back if (back !== void);
+	}
+	
+	
+	//==========================================================================
+	
+	function setCinemat(elm)
+	{
+		// シネマットを設定
+		
+		var layer = (elm.layer == 'fore') ? fore : back;
+		
+		objMaskSettings.left   = (int) elm.left;
+		objMaskSettings.top    = (int) elm.top;
+		objMaskSettings.width  = (int) elm.width;
+		objMaskSettings.height = (int) elm.height;
+		
+		if (objMaskSettings.left < 0) {
+			objMaskSettings.left = 0;
+		}
+		else if (objMaskSettings.left > fore.width) {
+			objMaskSettings.left = fore.width - 1;
+		}
+		
+		if (objMaskSettings.top < 0) {
+			objMaskSettings.top = 0;
+		}
+		else if (objMaskSettings.top > fore.height) {
+			objMaskSettings.top = fore.height - 1;
+		}
+		
+		if (objMaskSettings.width < 1) {
+			objMaskSettings.width = 1;
+		}
+		else if (objMaskSettings.width > fore.width - objMaskSettings.left) {
+			objMaskSettings.width = fore.width - objMaskSettings.left;
+		}
+		
+		if (objMaskSettings.height < 1) {
+			objMaskSettings.height = 1;
+		}
+		else if (objMaskSettings.height > fore.height - objMaskSettings.top) {
+			objMaskSettings.height = fore.height - objMaskSettings.top;
+		}
+		
+		layer.fillRect(0, 0, fore.width, fore.height, strMaskColor);
+		layer.fillRect(
+			objMaskSettings.left,
+			objMaskSettings.top,
+			objMaskSettings.width,
+			objMaskSettings.height,
+			0x00000000
+		);
+		
+		layer.visible           = true;
+		objMaskSettings.visible = true;
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function clearCinemat(elm)
+	{
+		// シネマットをクリア
+		
+		var layer = (elm.layer == 'fore') ? fore : back;
+		
+		layer.fillRect(0, 0, fore.width, fore.height, 0x00000000);
+		layer.visible           = false;
+		objMaskSettings.visible = false;
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function emuBacklay()
+	{
+		// [backlay]のエミュレーション
+		
+		back.assignComp();
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function loadImages(page, fname)
+	{
+		// レイヤに画像を読み込む
+		
+		this[page].loadImages(%[storage : fname]);
+		this[page].opacity = 255;
+		this[page].visible = true;
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function stopTrans()
+	{
+		// トランジションを止める
+		
+		if (fore !== void && isvalid(fore)) {
+			fore.stopTransition();
+		}
+		
+		if (back !== void && isvalid(back)) {
+			back.stopTransition();
+		}
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function restructLayers()
+	{
+		// トランジションの事後処理
+		
+		if (fore === void || !isvalid(fore) || back === void || !isvalid(back)) {
+			return;
+		}
+		
+		fore.assignComp();
+		fore.parent   = window.fore.base;
+		//fore.absolute = window.fore.layers[window.fore.layers.count - 1].absolute + 1000;
+		fore.absolute = MBLayerAbs.cinemat;
+		
+		back.parent   = window.back.base;
+		back.absolute = fore.absolute;
+	}
+	
+	
+	//==========================================================================
+	
+	function save()
+	{
+		var dic = %[];
+		
+		dic.setting_left    = objMaskSettings.left;
+		dic.setting_top     = objMaskSettings.top;
+		dic.setting_width   = objMaskSettings.width;
+		dic.setting_height  = objMaskSettings.height;
+		dic.setting_visible = objMaskSettings.visible;
+		dic.absolute        = fore.absolute;
+		
+		return dic;
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function load(dic)
+	{
+		if (dic === void) {
+			clearCinemat(%[layer : 'fore']);
+			clearCinemat(%[layer : 'back']);
+			return;
+		}
+		
+		if (dic.setting_visible) {
+			setCinemat(%[
+				layer  : 'fore',
+				left   : dic.setting_left,
+				top    : dic.setting_top,
+				width  : dic.setting_width,
+				height : dic.setting_height
+			]);
+			
+			setCinemat(%[
+				layer  : 'back',
+				left   : dic.setting_left,
+				top    : dic.setting_top,
+				width  : dic.setting_width,
+				height : dic.setting_height
+			]);
+		}
+		else {
+			clearCinemat(%[layer : 'fore']);
+			clearCinemat(%[layer : 'back']);
+		}
+		
+		fore.absolute = dic.absolute;
+		back.absolute = fore.absolute;
+	}
+}
+

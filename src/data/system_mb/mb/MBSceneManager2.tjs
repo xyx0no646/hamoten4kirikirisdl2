@@ -1,0 +1,291 @@
+/******************************************************************************
+	system_mb/mb/MBSceneManager2.tjs
+	
+	シーン既読管理と擬似どこでもセーブを管理しようかなぁ
+*******************************************************************************/
+
+
+class MBSceneManager2 extends MBObject
+{
+	// プロパティ
+	var blSceneSkipEnabled   = true;	// シーンスキップの許可/不許可
+	var blMessageSkipEnabled = false;	// メッセージスキップの許可/不許可
+	var strLastUsedSceneName = "";		// 最後に再生したシーン名
+	var strDirectionPath     = "scenario/direction";
+	var strContentPath       = "scenario/content";
+	
+	var chapnum;
+	property intCurrentChapter {
+		// 章番号プロパティ
+		
+		setter (num) {
+			if (num == "0") {
+				num = 1;
+			}
+			chapnum = num;
+		}
+		
+		getter () {
+			return chapnum;
+		}
+	}
+	
+	var scenenum;
+	property intCurrentScene {
+		// シーン番号プロパティ
+		
+		setter (num) {
+			/*num = int num;
+			if (num < 1) {
+				num = 1;
+			}*/
+			scenenum = num;
+		}
+		
+		getter () {
+			return scenenum;
+		}
+	}
+	
+	property strCurrentScenarioFile
+	{
+		getter() {
+			return "scenario/chapter%d/%s.ks".sprintf(chapnum, scenenum);
+		}
+	}
+	
+	
+	// クラス変数
+	var ptSceneList;	// シーン管理ハッシュへの参照
+	var strSceneNameTableFile = "tables/scene_names.tjs";	// シーン名テーブル
+	
+	
+	// 管理オブジェクト
+	var objSceneNameTable;
+	
+	
+	function MBSceneManager2(win)
+	{
+		// コンストラクタ
+		
+		super.MBObject(win);
+		init();
+	}
+	
+	function finalize()
+	{
+		// ファイナライザ
+		
+		invalidate objSceneNameTable if (objSceneNameTable !== void);
+		
+		super.finalize(...);
+	}
+	
+	function init()
+	{
+		// 初期化
+		
+		if (typeof(sf.scenelist) != "Object") {
+			sf.scenelist = %[];
+		}
+		
+		if (Storages.isExistentStorage(strSceneNameTableFile)) {
+			objSceneNameTable = Scripts.evalStorage(strSceneNameTableFile);
+		}
+		else {
+			// テーブルが見付からない場合はダミーを作っておく
+			objSceneNameTable    = [];
+			objSceneNameTable[0] = [];
+		}
+		
+		ptSceneList = sf.scenelist;
+	}
+	
+	//==========================================================================
+	
+	function getDictKey(ch, sc)
+	{
+		// ハッシュにアクセスするためのキーを取得
+		
+		if (!ch) {
+			ch = intCurrentChapter;
+		}
+		if (!sc) {
+			sc = intCurrentScene;
+		}
+		
+		return "c%ss%s".sprintf(ch, sc);
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function checkSceneStatus(ch, sc)
+	{
+		// シーンが既読かどうか調べる（章番号とシーン番号で指定する用）
+		
+		return getSceneStatus(getDictKey(ch, sc));
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function getSceneStatus(key)
+	{
+		// シーンが既読かどうか調べる
+		
+		if (key == "") {
+			key = getDictKey();
+		}
+		
+		if (ptSceneList[key]) {
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function setSceneStatus(st = true, sc, ch)
+	{
+		// シーンのステータスを設定する
+		
+		var key = getDictKey(ch, sc);
+		
+		ptSceneList[key] = st;
+	}
+	
+	
+	//==========================================================================
+	
+	/**************************************************************************
+		シーン再生関連
+	**************************************************************************/
+	
+	function getContentFileName(chapter, scene)
+	{
+		// シーンの内容のファイル名を返す
+		
+		if (!chapter) {
+			chapter = intCurrentChapter;
+		}
+		
+		if (!scene) {
+			scene = intCurrentScene;
+		}
+		
+		var fname = "";
+		
+		if (chapter < 0) {
+			// 章数が負の場合はエンディングと見なす（通常は-1）
+			fname = "%s/ending/%s.ks".sprintf(strContentPath, scene);
+		}
+		else {
+			// 普通の章
+			fname = "%s/chapter%s/%s.ks".sprintf(strContentPath, chapter, scene);
+		}
+		
+		return fname;
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function getDirectionFileName(chapter, scene)
+	{
+		// ディレクションファイルの名前を返す
+		
+		var fname = "";
+		if (!chapter) {
+			chapter = intCurrentChapter;
+		}
+		
+		if (!scene) {
+			scene = intCurrentScene;
+		}
+		
+		//if (SystemManager.strContextMenuType == 'recollection') {
+		if (f.isFromExtraMenu) {
+			// 回想モードの場合
+			
+			if (chapter < 0) {
+				fname = "%s/_extra_ending.ks".sprintf(strDirectionPath);
+			}
+			else {
+				fname = "%s/_extra.ks".sprintf(strDirectionPath);
+			}
+		}
+		
+		else {
+			// 本編モードの場合
+			
+			if (chapter < 0) {
+				// 章数が負の場合はエンディングと見なす（通常は-1）
+				fname = "%s/ending/%s.ks".sprintf(strDirectionPath, scene);
+			}
+			else {
+				// 普通の章
+				fname = "%s/chapter%s/%s.ks".sprintf(strDirectionPath, chapter, scene);
+			}
+		}
+		
+		return fname;
+	}
+	
+	
+	//==========================================================================
+	
+	function save()
+	{
+		// セーブ
+		
+		var dict = %[
+			currentchapter   : intCurrentChapter,
+			currentscene     : intCurrentScene,
+			sceneskipenabled : blSceneSkipEnabled,
+			msgskipenabled   : blMessageSkipEnabled,
+			lastscenename    : strLastUsedSceneName
+		];
+		
+		return dict;
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function load(dict)
+	{
+		// ロード
+		
+		try {
+			intCurrentChapter    = dict.currentchapter;
+			intCurrentScene      = dict.currentscene;
+			blSceneSkipEnabled   = dict.sceneskipenabled;
+			blMessageSkipEnabled = dict.msgskipenabled;
+			strLastUsedSceneName = dict.lastscenename;
+		}
+		catch {
+			intCurrentChapter    = 1;
+			intCurrentScene      = 1;
+			blSceneSkipEnabled   = true;
+			blMessageSkipEnabled = false;
+		}
+	}
+	
+	
+	//==========================================================================
+	// れがしーこーど
+	
+	function setMessageSkipStatus(st)
+	{
+		if (st == true) {
+			blMessageSkipEnabled = true;
+		}
+		else {
+			blMessageSkipEnabled = false;
+		}
+	}
+	
+	function getMessageSkipStatus()
+	{
+		return blMessageSkipEnabled;
+	}
+}

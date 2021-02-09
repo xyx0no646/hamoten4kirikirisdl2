@@ -1,0 +1,58 @@
+/*****************************************************************************
+	system_mb/init/withMBQuickSave.tjs
+*******************************************************************************/
+
+var _QuickSaves = %[
+	fore : new MBQuickSave(kag, kag.fore.base),
+	back : new MBQuickSave(kag, kag.back.base)
+];
+
+dm(_QuickSaves.fore.absolute);
+
+//==============================================================================
+// タグ
+
+/*
+	[qsstate] - クイックセーブの表示とかを切り替える
+		visible : 表示するかどうか
+		enabled : 有効かどうか
+*/
+TAG.qsstate = function(elm)
+{
+	if (elm.visible !== void) {
+		if (!elm.forse && kag.skipMode > 0) {
+			// スキップ中は強制的に非表示、ただし選択肢は除く
+			_QuickSaves.fore.hide();
+			_QuickSaves.back.hide();
+		}
+		else {
+			switch (elm.visible) {
+				case 'true':
+					_QuickSaves.fore.show();
+					_QuickSaves.back.show();
+					break;
+				
+				case 'false':
+					_QuickSaves.fore.hide();
+					_QuickSaves.back.hide();
+					break;
+			}
+		}
+	}
+	
+	if (elm.enabled !== void) {
+		switch (elm.enabled) {
+			case 'true':
+				_QuickSaves.fore.setEnabled();
+				_QuickSaves.back.setEnabled();
+				break;
+			
+			case 'false':
+				_QuickSaves.fore.unsetEnabled();
+				_QuickSaves.back.unsetEnabled();
+				break;
+		}
+	}
+	
+	return 0;
+} incontextof kag;

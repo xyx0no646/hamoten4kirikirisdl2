@@ -1,0 +1,93 @@
+/******************************************************************************
+	KAGのメソッドをいろいろhogeる。
+*******************************************************************************/
+
+//------------------------------------------------------------------------------
+// Pタグ書き換え
+// ヒストリレイヤの改行量を倍にする
+TAG.p = function(elm)
+{
+	// ページクリック待ち
+	if (historyWriteEnabled) {
+		historyLayer.reline();
+		historyLayer.reline();
+	}
+	return showPageBreak(elm);
+} incontextof kag;
+
+//------------------------------------------------------------------------------
+// stopAllTransitionsオーバーライド
+// 立ち絵オブジェクト、暗幕オブジェクトのトランジションも含める
+kag.stopAllTransitions = function()
+{
+	// すべてのトランジションを停止させる
+	var layers, messages;
+	fore.base.stopTransition();
+	layers = fore.layers, messages = fore.messages;
+	for(var i = layers.count-1; i >= 0; i--) layers[i].stopTransition();
+	for(var i = messages.count-1; i >= 0; i--) messages[i].stopTransition();
+	back.base.stopTransition();
+	layers = back.layers, messages = back.messages;
+	for(var i = layers.count-1; i >= 0; i--) layers[i].stopTransition();
+	for(var i = messages.count-1; i >= 0; i--) messages[i].stopTransition();
+	
+	// MB系オブジェクト
+	GraphicManager.stopAllTransitions();
+	
+	transCount = 0; // 一応
+} incontextof kag;
+
+//------------------------------------------------------------------------------
+// 背景レイヤのloadImagesオーバーライド
+// フルパス画像のロードに失敗した場合にオートパスを試してみる
+
+kag.fore.base.loadImages = function(elm)
+{
+	// loadImages オーバーライド
+	if(elm !== void)
+	{
+		elm.mode = "rect"; // レイヤモードを変えられると困るので
+
+		if(elm.visible !== void)
+		{
+			// visible の状態を変えられると困るので
+			if(isPrimary) elm.visible = true; else elm.visible = false;
+		}
+	}
+	// super.loadImages(elm);
+	try {
+		global.GraphicLayer.loadImages(elm);
+	}
+	catch(e) {
+		var filename = elm.storage.substring(elm.storage.indexOf('bgimage') + 8);
+		filename = sysfunc.getPathBGImage(filename);
+		elm.storage = filename;
+		global.GraphicLayer.loadImages(elm);
+		dm("<MBSystem> ゲームフォルダのパスが変更になったため、背景画像を再設定しました。");
+	}
+} incontextof kag.fore.base;
+
+kag.back.base.loadImages = function(elm)
+{
+	// loadImages オーバーライド
+	if(elm !== void)
+	{
+		elm.mode = "rect"; // レイヤモードを変えられると困るので
+
+		if(elm.visible !== void)
+		{
+			// visible の状態を変えられると困るので
+			if(isPrimary) elm.visible = true; else elm.visible = false;
+		}
+	}
+	// super.loadImages(elm);
+	try {
+		global.GraphicLayer.loadImages(elm);
+	}
+	catch(e) {
+		var filename = elm.storage.substring(elm.storage.indexOf('bgimage') + 8);
+		filename = sysfunc.getPathBGImage(filename);
+		elm.storage = filename;
+		global.GraphicLayer.loadImages(elm);
+	}
+} incontextof kag.back.base;

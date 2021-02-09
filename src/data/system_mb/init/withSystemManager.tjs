@@ -1,0 +1,98 @@
+/******************************************************************************
+	functions/init/customize_sysman.tjs
+
+	グローバルオブジェクトの生成とか独自タグの生成とか。
+	コアオブジェクト + システムマネージャ系。
+*******************************************************************************/
+
+var MBVersion = MBContPref.Version;
+
+//==============================================================================
+// システム統括オブジェクト
+
+var MBSystem = new MercuryBlue(kag);
+kag.addPlugin(MBSystem);
+
+kag.leftClickHook.add(MBSystem.cancelKBOperationFlagOnMouseClick);
+kag.rightClickHook.add(MBSystem.cancelKBOperationFlagOnMouseClick);
+
+
+/*
+	[dm] - コンソールにデバッグメッセージを表示
+		content : 内容
+*/
+
+TAG.dm = function(elm)
+{
+	dm(elm.content);
+	
+	return 1;
+} incontextof kag;
+
+
+//==============================================================================
+// ゲームシステムオブジェクト
+
+var SystemManager = MBSystem.objSystemManager;
+
+kag.keyDownHook.add(SystemManager.objFocusController.onKeyDown);
+
+
+//------------------------------------------------------------------------------
+// 独自拡張タグ
+
+/*
+	[actcancel] - アクションキャンセラの操作
+	
+	enabled : 有効 / 無効の切り替え。trueのとき、アクションがすべてキャンセルされる。
+			  falseのとき、アクションキャンセラが破棄される。
+			  デフォルトはfalse。
+*/
+
+TAG.actcancel = function(elm)
+{
+	if (elm.enabled) {
+		SystemManager.acActivateCanceller(elm.clickable);
+	}
+	else {
+		SystemManager.acDisactivateCanceller();
+	}
+	
+	return 1;
+} incontextof kag;
+
+
+/*
+	[finishload] - ロード完了処理
+	
+	auto : trueまたはfalse
+*/
+
+TAG.finishload = function(elm)
+{
+	if (elm.auto) {
+		if (GraphicManager.objLoadingCartain !== void && isvalid(GraphicManager.objLoadingCartain)) {
+			GraphicManager.objLoadingCartain.visible = false;
+		}
+	}
+	else {
+		var str = "ロードが完了しました。";
+		
+		if (GraphicManager.objLoadingCartain !== void && isvalid(GraphicManager.objLoadingCartain)) {
+			GraphicManager.objLoadingCartain.absolute = MBLayerAbs.dialog - 100000;
+		}
+		
+		tf.loaddialog = MBSystem.addTempObject(new MBPseudyNoticeDialog(kag, kag.fore.base, str));
+		tf.loaddialog.show();
+	}
+	
+	if (tf.bgm_restored != "") {
+		TAG.playbgm(%[storage : tf.bgm_restored]);
+	}
+	
+	tf.bgm_restored = "";
+	
+	return 1;
+} incontextof kag;
+
+

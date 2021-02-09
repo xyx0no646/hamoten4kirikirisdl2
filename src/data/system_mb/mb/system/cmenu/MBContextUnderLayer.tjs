@@ -1,0 +1,45 @@
+/******************************************************************************
+	system_mb/mb/system/cmenu/MBContextUnderLayer.tjs
+*******************************************************************************/
+
+
+class MBContextUnderLayer extends KAGLayer
+{
+	var owner;
+	
+	function MBContextUnderLayer(win, par, own)
+	{
+		// コンストラクタ
+		
+		super.KAGLayer(win, par);
+		
+		owner = own;
+		name = 'コンテクストメニュー下敷きレイヤ';
+		
+		loadImages("clearmat");
+		setSizeToImageSize();
+		setPos(0, 0);
+		
+		hitType = htMask;
+		hitThreshold = 0;
+		absolute = MBLayerAbs.contextMenu;
+		visible = true;
+		enabled = true;
+	}
+	
+	function finalize()
+	{
+		// ファイナライザ
+		
+		super.finalize(...);
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function onMouseDown(button, shift)
+	{
+		// クリックされたら問答無用でコンテクストメニューを閉じる
+		
+		owner.close();
+	}
+}

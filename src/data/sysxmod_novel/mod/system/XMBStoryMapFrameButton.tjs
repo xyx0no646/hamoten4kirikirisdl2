@@ -1,0 +1,23 @@
+/******************************************************************************
+	system_xmb/xmb/system/storymap/XMBStoryMapFrameButton.tjs
+*******************************************************************************/
+
+
+class XMBStoryMapFrameButton extends MBButton2
+{
+	var id;
+	
+	function XMBStoryMapFrameButton(win, par)
+	{
+		// コンストラクタ
+		
+		super.MBButton2(win, par);
+	}
+	
+	function finalize()
+	{
+		// ファイナライザ
+		
+		super.finalize(...);
+	}
+}

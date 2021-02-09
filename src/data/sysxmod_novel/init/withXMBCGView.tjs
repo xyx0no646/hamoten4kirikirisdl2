@@ -1,0 +1,8 @@
+/******************************************************************************
+	system_xmb/init/withXMBCGView.tjs
+*******************************************************************************/
+
+var CGViewer = new XMBCGViewController(kag);
+MBSystem.addXMBPlugin(CGViewer);
+
+CGViewer.StandBy();

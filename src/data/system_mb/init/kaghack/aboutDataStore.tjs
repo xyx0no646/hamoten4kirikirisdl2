@@ -1,0 +1,97 @@
+/******************************************************************************
+	KAGのメソッドをいろいろhogeる。
+*******************************************************************************/
+
+//------------------------------------------------------------------------------
+// getBookMarkInfoFromDataオーバーライド
+// セーブデータの情報を独自形式にする
+kag.getBookMarkInfoFromData = function(dic, num)
+{
+	var labelname = dic.currentPageName;
+	var lchar     = SystemManager.getLeadingCharObject();
+	
+	if(num < numBookMarks)
+	{
+		if (lchar !== void) {
+			bookMarkNames[num] = (SystemManager.getLeadingCharObject()).name;
+		}
+		else {
+			bookMarkNames[num] = 'No Name...?';
+		}
+		bookMarkNames[num] += "/" + labelname;
+		bookMarkNames[num] += "/" + SystemManager.ptGetTotalPlayTime();
+		var date = new Date();
+		date.setTime(dic.storeTime);
+		date = "%04d/%02d/%02d %02d:%02d".sprintf(
+			date.getYear(), date.getMonth() + 1, date.getDate(),
+			date.getHours(), date.getMinutes() );
+		bookMarkDates[num] = date;
+		setBookMarkMenuCaptions();
+		saveSystemVariables();
+	}
+} incontextof kag;
+
+//==============================================================================
+// BGMとSEの音量をセーブデータから読まないようにする
+kag.bgm.restore = function(dic)
+{
+	// 辞書配列から現在の状態を復帰
+	
+	tf.bgm_restored = "";
+	
+	stopFade();
+	if(dic.currentStorage != "") {
+		tf.bgm_restored = dic.currentStorage;
+		if (!MBSystem.blDivingManagerStoreState) {
+			play(%[ storage : dic.currentStorage, loop : true]);
+		}
+		else {
+			stop();
+		}
+	}
+	else {
+		stop();
+	}
+} incontextof kag.bgm;
+//------------------------------------------------------------------------------
+for(tf.i=0; tf.i<kag.numSEBuffers; tf.i++) {
+	kag.se[tf.i].restore = function(dic)
+	{
+		// 辞書配列から状態を読み出し、復帰する
+		
+		if (dic !== void && isvalid(dic)) {
+			//currentVolume = dic.volume;
+			pan = dic.pan;
+			if(dic.currentStorage != "")
+				play(%[storage : dic.currentStorage, loop : true]);
+			else
+				stop();
+		}
+		else {
+			stop();
+		}
+	} incontextof kag.se[tf.i];
+}
+
+//------------------------------------------------------------------------------
+// 既読処理用変数の名前を変える
+
+kag.setRecordLabel = function(storage, label)
+{
+	// 現在のラベルを設定する
+	if(autoRecordPageShowing)
+	{
+		if(label != '')
+		{
+			if(label[0] == '*') label = label.substring(1);
+			if(label[1] == '-') return; // ローカルラベル
+		}
+		/*currentRecordName = 'trail_' + Storages.chopStorageExt(
+			Storages.extractStorageName(storage)) + '_' + label;*/
+		currentRecordName = "trail_c%d%s_%s".sprintf(
+			SceneManager.intCurrentChapter,
+			Storages.chopStorageExt(Storages.extractStorageName(storage)),
+			label
+		);
+	}
+} incontextof kag;

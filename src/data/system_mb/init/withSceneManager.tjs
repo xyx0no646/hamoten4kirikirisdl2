@@ -1,0 +1,115 @@
+//==============================================================================
+// シーン管理オブジェクト関連
+
+var SceneManager = MBSystem.objSceneManager;
+
+//------------------------------------------------------------------------------
+// 独自拡張タグ
+
+/*
+	[scbegin] - シーン開始宣言
+		chapter : 章番号（省略可）
+		scene : シーン番号（省略不可）
+	
+	このタグはシーンに入るときに必ず呼ばれなければならない
+*/
+
+TAG.scbegin = function(elm)
+{
+	SceneManager.blMessageSkipEnabled = true;
+	SceneManager.blSceneSkipEnabled   = true;
+	
+	if (elm.chapter) {
+		SceneManager.intCurrentChapter = elm.chapter;
+	}
+	
+	if (elm.scene) {
+		SceneManager.intCurrentScene = elm.scene;
+		f.currentStorage             = SceneManager.strCurrentScenarioFile;
+	}
+	else {
+		throw new Exception("シーン指定が正しくありません。");
+	}
+	
+	if (f.isFromExtraMenu) {
+		// エクストラモードからの場合
+		SystemManager.strContextMenuType = "recollection";
+	}
+	else {
+		// ストーリーモードからの場合
+		SystemManager.strContextMenuType = "story";
+	}
+	
+	return 1;
+} incontextof kag;
+
+/*
+	[scfinish] - シーン終了宣言
+	
+	このタグはシーン（nrN.ks）を抜けるときに必ず呼ばれなければならない
+*/
+
+TAG.scfinish = function()
+{
+	f.prevscene    = SceneManager.intCurrentScene;
+	f.prevchapter  = SceneManager.intCurrentChapter;
+	
+	SceneManager.blSceneSkipEnabled = false;
+	SceneManager.setSceneStatus();
+	
+	SystemManager.resetGraphicCache();
+	SystemManager.strContextMenuType = 'default';
+	
+	TAG.stopmove(%[]);
+	
+	return 1;
+} incontextof kag;
+
+
+/*
+	[scskip] - シーンスキップの可否を設定
+		type : scene / messageを選択。デフォルトはscene。
+		enabled : true/ falseを選択。
+*/
+
+TAG.scskip = function(elm)
+{
+	var value = (elm.enabled) ? true : false;
+	
+	if (elm.type == "message") {
+		SceneManager.blMessageSkipEnabled = value;
+	}
+	else {
+		SceneManager.blSceneSkipEnabled = value;
+	}
+	
+	return 1;
+} incontextof kag;
+
+/*
+	[sccall] - シーンのコンテンツファイルへジャンプする
+		chapter : 章番号。デフォルトで現在の章番号。
+		scene   : シーン番号。デフォルトで現在のシーン番号。
+*/
+
+TAG.sccall = function(elm)
+{
+	var fname = SceneManager.getContentFileName(elm.chapter, elm.scene);
+	process(fname, "*scene-start");
+	
+	return 1;
+} incontextof kag;
+
+/*
+	[screturn] - シーンのディレクションファイルへ戻る
+		chapter : 章番号。デフォルトで現在の章番号。
+		scene   : シーン番号。デフォルトで現在のシーン番号。
+*/
+
+TAG.screturn = function(elm)
+{
+	var fname = SceneManager.getDirectionFileName(elm.chapter, elm.scene);
+	process(fname, "*scene-end");
+	
+	return 1;
+} incontextof kag;

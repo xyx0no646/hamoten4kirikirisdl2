@@ -1,0 +1,144 @@
+/******************************************************************************
+	MBCartainController.tjs v1.1
+*******************************************************************************/
+
+class MBCartainController
+{
+	var window;	// ウィンドウ参照
+	
+	var fore;	// 表ページ
+	var back;	// 裏ページ
+	
+	
+	function MBCartainController(win)
+	{
+		// コンストラクタ
+		
+		window = win;
+	}
+	
+	function finalize()
+	{
+		// ファイナライザ
+		
+		invalidate fore if (fore !== void);
+		invalidate back if (back !== void);
+	}
+	
+	
+	//==========================================================================
+	
+	function prepareCartains()
+	{
+		// 暗幕レイヤを準備する
+		
+		if (fore !== void && isvalid(fore) && back !== void && isvalid(back)) {
+			return;
+		}
+		
+		var st = System.getTickCount();
+		
+		if (fore === void || !isvalid(fore)) {
+			fore = new GraphicLayer(window, window.fore.base);
+			fore.name = '暗幕オモテ';
+			fore.hitType = htMask;
+			fore.hitThreshold = 255;
+			fore.setImageSize(800, 600);
+			fore.loadImages(%[storage : 'clearmat']);
+			fore.setSizeToImageSize();
+			fore.setPos(0, 0);
+			fore.absolute = MBLayerAbs.blackout;
+			fore.opacity = 255;
+			fore.visible = true;
+		}
+		
+		
+		if (back === void || !isvalid(back)) {
+			back = new GraphicLayer(window, window.back.base);
+			back.name = '暗幕ウラ';
+			back.hitType = htMask;
+			back.absolute = MBLayerAbs.blackout;
+			back.opacity = 255;
+			back.visible = true;
+		}
+		
+		fore.setCompLayer(back);
+		back.setCompLayer(fore);
+		
+		dm("<GraphicManager> 暗幕の準備に %dmsec かかりました".sprintf(System.getTickCount() - st));
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function emuBacklay()
+	{
+		// [backlay]のエミュレーション
+		
+		prepareCartains();
+		back.assignComp();
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function loadImages(page, fname)
+	{
+		// 暗幕レイヤに画像を読み込む
+		
+		prepareCartains();
+		
+		this[page].loadImages(%[storage : fname]);
+		this[page].opacity = 255;
+		this[page].visible = true;
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function destroyCartains()
+	{
+		// 暗幕レイヤを破棄する
+		
+		invalidate fore if (fore !== void);
+		invalidate back if (back !== void);
+		
+		dm("<GraphicManager> 暗幕レイヤが破棄されました");
+	}
+	
+	
+	//==========================================================================
+	
+	function stopTrans()
+	{
+		// トランジションを止める
+		
+		if (fore !== void && isvalid(fore)) {
+			fore.stopTransition();
+		}
+		
+		if (back !== void && isvalid(back)) {
+			back.stopTransition();
+		}
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function restructLayers()
+	{
+		// トランジションの事後処理
+		
+		if (fore === void || !isvalid(fore) || back === void || !isvalid(back)) {
+			return;
+		}
+		
+		fore.assignComp();
+		fore.parent = window.fore.base;
+		fore.absolute = MBLayerAbs.blackout;
+		
+		back.parent = window.back.base;
+		back.absolute = MBLayerAbs.blackout;
+	}
+	
+	
+	
+	//==========================================================================
+}
+

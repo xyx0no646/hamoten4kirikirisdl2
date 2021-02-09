@@ -1,0 +1,28 @@
+/******************************************************************************
+	system_mb/mb/system/cmenu/MBEndingContextMenu.tjs
+*******************************************************************************/
+
+
+class MBEndingContextMenu extends MBNormalContextMenu
+{
+	var objMenuLabelArray = [ 'メッセージ枠を隠す (H)', '--', '環境設定'];
+	
+	var intSceneSkipIndex   = 98;
+	var intMessageSkipIndex = 99;
+	
+	function MBEndingContextMenu(win, par, own)
+	{
+		// コンストラクタ
+		
+		dm('hahaha');
+		super.MBNormalContextMenu(...);
+	}
+	
+	function finalize()
+	{
+		// ファイナライザ
+		
+		super.finalize(...);
+	}
+	
+}

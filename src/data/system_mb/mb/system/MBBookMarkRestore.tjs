@@ -1,0 +1,425 @@
+/******************************************************************************
+	system_mb/mb/system/MBBookMarkRestore.tjs
+*******************************************************************************/
+
+
+class MBBookMarkRestore extends MBComponentLayer
+{
+	// プロパティ
+	var intSaveSlots   = 10;	// セーブスロットの数
+	var intCurrentSlot = 0;
+	var intSlotBarPosY = 30;
+	var intSavePanels  = 5;		// セーブパネルの数（ページあたり）
+	
+	var strBGImage = 'sys_load';
+	
+	var blForceActivate = false;	// とにかくパネルを選べるようにするかどうか
+	
+	
+	// 管理オブジェクト
+	var objSaveSlotButtons = [];	// セーブスロットボタンの配列
+	var objBookMarkButtons = [];	// セーブデータボタンの配列
+	var objSlotMarkerLayer;			// 現在のセーブスロットを表示するレイヤ
+	var objCancelButton;			// キャンセルボタン
+	var objDialog;					// 確認ダイアログなど
+	
+	
+	// その他メンバ変数
+	var refFocusMember;	// フォーカススタックの参照
+	var intTempTarget;	// 選択されたセーブデータの番号
+	
+	
+	function MBBookMarkRestore(win, par)
+	{
+		// コンストラクタ
+		
+		super.MBComponentLayer(win, par);
+		name = 'データローダー';
+		init();
+	}
+	
+	function finalize()
+	{
+		// ファイナライザ
+		
+		disactivate();
+		super.finalize(...);
+	}
+	
+	function init()
+	{
+		// イニシャライザ
+		
+		parent   = window.fore.base;
+		absolute = MBLayerAbs.backpack;
+		
+		loadImages(%[ storage : sysfunc.getPathBGImage(strBGImage) ]);
+		setSizeToImageSize();
+		setPos(0, 0);
+		
+		intCurrentSlot = getSlotIDFromDataID(sf.backpack_lastused);
+		
+		setSaveSlotButtons();
+		setBookMarkButtons();
+		
+		if (objCancelButton === void || !isvalid(objCancelButton)) {
+			objCancelButton = new MBButton(window, this);
+			objCancelButton.loadImages(sysfunc.getPathImage('bookmark/btCancel'));
+			objCancelButton.setPos(20, height - objCancelButton.height - 20);
+			objCancelButton.visible = true;
+		}
+		
+		setFocusStack();
+		
+		visible = true;
+	}
+	
+	function disactivate()
+	{
+		// 不可視化
+		
+		visible = false;
+		
+		invalidate objDialog       if (objDialog       !== void);
+		invalidate objCancelButton if (objCancelButton !== void);
+		
+		SystemManager.fcRemoveStackMember(refFocusMember);
+		initSaveSlotButtons();
+		initBookMarkButtons();
+		
+		freeImage();
+		SystemManager.fireContextMenuEndTrigger();
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function setFocusStack()
+	{
+		// フォーカススタックを設定
+		
+		setSaveSlotFocusStack();
+		setBookMarkFocusStack();
+		
+		objCancelButton.objCursorMapHash.up   = objBookMarkButtons[intSavePanels - 1];
+		objCancelButton.objCursorMapHash.down = objSaveSlotButtons[intCurrentSlot];
+		
+		SystemManager.fcRemoveStackMember(refFocusMember);
+		refFocusMember = SystemManager.fcPushFocusStack(objSaveSlotButtons[intCurrentSlot]);
+		SystemManager.fcApplyFocusTargetSearch();
+	}
+	
+	
+	//==========================================================================
+	// セーブスロット関連
+	
+	function initSaveSlotButtons()
+	{
+		// セーブスロットボタンを初期化、というか不可視化
+		
+		invalidate objSlotMarkerLayer if (objSlotMarkerLayer !== void);
+		
+		var i;
+		for (i=0; i<objSaveSlotButtons.count; i++) {
+			invalidate objSaveSlotButtons[i] if (objSaveSlotButtons[i] !== void);
+		}
+		objSaveSlotButtons = [];
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function setSaveSlotButtons()
+	{
+		// セーブスロットボタンを配置
+		
+		initSaveSlotButtons();
+		
+		var i;
+		for (i=0; i<intSaveSlots; i++) {
+			objSaveSlotButtons[i] = new MBButton(window, this);
+			var obj = objSaveSlotButtons[i];
+			
+			obj.setSize(37, 37);
+			obj.setPos(198 + 58 * i, intSlotBarPosY);
+			if (i == 7 || i == 8) {
+				obj.left -= 1;
+			}
+			else if (i == 9) {
+				obj.left += 6;
+			}
+			
+			obj.loadImages(sysfunc.getPathImage('bookmark/btSaveSlot'));
+			obj.visible = true;
+		}
+		
+		setSaveSlotMarker();
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function setSaveSlotMarker()
+	{
+		// スロットマーカーを配置する
+		
+		if (objSlotMarkerLayer === void || !isvalid(objSlotMarkerLayer)) {
+			objSlotMarkerLayer = new global.KAGLayer(window, this);
+			objSlotMarkerLayer.hitType      = htMask;
+			objSlotMarkerLayer.hitThreshold = 256;
+			objSlotMarkerLayer.name         = 'スロットマーカー';
+			objSlotMarkerLayer.setSize(37, 37);
+			objSlotMarkerLayer.fillRect(0, 0, objSlotMarkerLayer.width, objSlotMarkerLayer.height, 0x99ffff00);
+			objSlotMarkerLayer.visible = true;
+		}
+		
+		var left = 198 + 58 * intCurrentSlot;
+		if (intCurrentSlot == 7 || intCurrentSlot == 8) {
+			left -= 1;
+		}
+		else if (intCurrentSlot == 9) {
+			left += 6;
+		}
+		
+		objSlotMarkerLayer.setPos(left, intSlotBarPosY - 2);
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function setSaveSlotFocusStack()
+	{
+		// セーブスロットボタンのフォーカス設定
+		
+		var i;
+		
+		for (i=0; i<objSaveSlotButtons.count; i++) {
+			var obj = objSaveSlotButtons[i];
+			var left = i - 1;
+			if (left < 0) {
+				left = intSaveSlots - 1;
+			}
+			var right = i + 1;
+			if (right >= intSaveSlots) {
+				right = 0;
+			}
+			var top    = objCancelButton;
+			var bottom = objBookMarkButtons[0];
+			
+			obj.objCursorMapHash.left  = objSaveSlotButtons[left];
+			obj.objCursorMapHash.right = objSaveSlotButtons[right];
+			obj.objCursorMapHash.up    = top;
+			obj.objCursorMapHash.down  = bottom;
+		}
+	}
+	
+	
+	//==========================================================================
+	// セーブデータ関連
+	
+	function initBookMarkButtons()
+	{
+		// セーブデータの選択ボタンを初期化というか不可視化
+		
+		var i;
+		for (i=0; i<objBookMarkButtons.count; i++) {
+			invalidate objBookMarkButtons[i] if (objBookMarkButtons[i] !== void);
+		}
+		objBookMarkButtons = [];
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function setBookMarkButtons()
+	{
+		// セーブデータボタンを配置
+		
+		initBookMarkButtons();
+		
+		var i;
+		for (i=0; i<intSavePanels; i++) {
+			objBookMarkButtons[i] = new MBBookMarkSelectPanel(window, this);
+			var obj = objBookMarkButtons[i];
+			
+			if (i == 0) {
+				obj.isAhead = true;
+			}
+			obj.init(intCurrentSlot * intSavePanels + i);
+			obj.setPos(110, 76 + 91 * i);
+			obj.drawItemFace();
+			obj.visible  = true;
+			
+			if (blForceActivate || obj.blHaveContent) {
+				obj.blActive = true;
+			}
+		}
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function updateBookMarkButtons()
+	{
+		// セーブデータパネルを再描画
+		
+		var i;
+		for (i=0; i<intSavePanels; i++) {
+			var obj = objBookMarkButtons[i];
+			obj.init(intCurrentSlot * intSavePanels + i);
+			obj.drawItemFace();
+			obj.visible = true;
+			
+			if (blForceActivate || obj.blHaveContent) {
+				obj.blActive = true;
+			}
+			else {
+				obj.blActive = false;
+			}
+		}
+		
+		// トップパネルとキャンセルボタンのフォーカススタックを再設定
+		var ref = objSaveSlotButtons[intCurrentSlot];
+		objBookMarkButtons[0].objCursorMapHash.up = ref;
+		objCancelButton.objCursorMapHash.down     = ref;
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function setBookMarkFocusStack()
+	{
+		// ブックマークボタンのフォーカス設定
+		
+		var i;
+		
+		for (i=0; i<objBookMarkButtons.count; i++) {
+			var obj = objBookMarkButtons[i];
+			var up  = i - 1;
+			if (up < 0) {
+				up = objSaveSlotButtons[intCurrentSlot];
+			}
+			else {
+				up = objBookMarkButtons[up];
+			}
+			
+			var down = i + 1;
+			if (down >= objBookMarkButtons.count) {
+				down = objCancelButton;
+			}
+			else {
+				down = objBookMarkButtons[down];
+			}
+			
+			obj.objCursorMapHash.up    = up;
+			obj.objCursorMapHash.down  = down;
+		}
+	}
+	
+	//==========================================================================
+	// イベント処理関連
+	
+	function onSelectedItemClick(sender)
+	{
+		// ボタンクリック時の動作
+		
+		// キャンセル
+		if (sender == objCancelButton) {
+			sndfunc.seCancel();
+			disactivate();
+			window.trigger('CLOSE_BOOKMARK_WINDOW');
+			return;
+		}
+		
+		var res;
+		
+		// スロット変更
+		res = objSaveSlotButtons.find(sender);
+		if (res > -1) {
+			sndfunc.seDeside();
+			intCurrentSlot = res;
+			setSaveSlotMarker();
+			updateBookMarkButtons();
+			return;
+		}
+		
+		
+		// ブックマークパネル
+		res = objBookMarkButtons.find(sender);
+		if (res > -1) {
+			makeConfirmation(sender);
+			return;
+		}
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function onEscapeKeyDown()
+	{
+		// エスケープキーが押されたときの動作
+		
+		onSelectedItemClick(objCancelButton);
+	}
+	
+	
+	//==========================================================================
+	// 動作関連
+	
+	function makeConfirmation(sender)
+	{
+		// 動作の確認
+		
+		intTempTarget = sender.intDataNumber;
+		
+		invalidate objDialog if (objDialog !== void);
+		
+		var str   = "No.%dをロードします。\nよろしいですか？".sprintf(intTempTarget + 1);
+		objDialog = new MBPseudyYesNoDialog(window, window.fore.base, this, str);
+		objDialog.show();
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function onYesNoSelected(res)
+	{
+		// 選択結果
+		
+		if (res) {
+			doMyWork();
+		}
+		else {
+			intTempTarget = void;
+		}
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function doMyWork()
+	{
+		// 動作を行う
+		
+		sf.backpack_lastused = intTempTarget;
+		
+		GraphicManager.showLoadingCartain();
+		SystemManager.strContextMenuType = 'story';
+		disactivate();
+		
+		window.loadBookMark(intTempTarget, true, true);
+	}
+	
+	//==========================================================================
+	// その他ユーティリティ
+	
+	function getSlotIDFromDataID(num)
+	{
+		// データIDからスロット番号を取得
+		
+		if (!num) {
+			num = 0;
+		}
+		
+		var res = num \ intSavePanels;
+		
+		if (!res) {
+			res = 0;
+		}
+		else if (res >= intSaveSlots) {
+			res = intSaveSlots - 1;
+		}
+		
+		return res;
+	}
+}

@@ -1,0 +1,60 @@
+/******************************************************************************
+	system_mb/mb/system/cmenu/MBCGViewerContextMenu.tjs
+*******************************************************************************/
+
+
+class MBCGViewerContextMenu extends MBNormalContextMenu
+{
+	var objMenuLabelArray = [ 'ＣＧ一覧に戻る', '自動再生 (A)', '--', '環境設定'];
+	
+	var intSceneSkipIndex   = 98;
+	var intMessageSkipIndex = 99;
+	
+	function MBCGViewerContextMenu(win, par, own)
+	{
+		// コンストラクタ
+		
+		dm('hahaha');
+		super.MBNormalContextMenu(...);
+	}
+	
+	function finalize()
+	{
+		// ファイナライザ
+		
+		super.finalize(...);
+	}
+	
+	
+	//==========================================================================
+	
+	function doOptionalWork(label)
+	{
+		// オプション項目の動作
+		
+		switch (label) {
+			case 'ＣＧ一覧に戻る':
+				//TAG.unlocksnapshot(%[]);
+				window.conductor.onReturn(%[]);
+				disableAll(false);
+				sndfunc.seDeside();
+				window.process("", "*scene-end");
+				SystemManager.destroyContextMenu();
+				return;
+			
+			case '自動再生 (A)':
+				//TAG.unlocksnapshot(%[]);
+				window.conductor.onReturn(%[]);
+				disableAll(false);
+				sndfunc.seDeside();
+				window.hideMouseCursor();
+				window.onAutoModeMenuItemClick();
+				SystemManager.destroyContextMenu();
+				return;
+			
+			default:
+		}
+		
+		super.doOptionalWork(...);
+	}
+}

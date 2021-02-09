@@ -1,0 +1,49 @@
+/******************************************************************************
+	system_mb/mb/init/kaghack/aboutWait.tjs
+*******************************************************************************/
+
+
+//==============================================================================
+// 流し読み中はwsを問答無用でスキップ可能にしてみる
+
+kag.tagHandlers.ws = function(elm)
+{
+	// 効果音の再生終了待ち
+	
+	// 次の停止までスキップまたは早送り中なら
+	if (skipMode >= 3) {
+		elm.canskip = true;
+	}
+	
+	return waitSEStop(elm);
+} incontextof kag;
+
+//------------------------------------------------------------------------------
+// 流し読み中はwbを（ｒｙ
+
+kag.tagHandlers.wb = function(elm)
+{
+	// BGM のフェード終了待ち
+	
+	// 次の停止までスキップまたは早送り中なら
+	if (skipMode >= 3) {
+		elm.canskip = true;
+	}
+	
+	return waitBGMFade(elm);
+} incontextof kag;
+
+//------------------------------------------------------------------------------
+// 流し読み中はwaitを（ｒｙ
+
+kag.tagHandlers.wait = function(elm)
+{
+	// ウェイト
+	
+	// 次の停止までスキップまたは早送り中で、かつ「forde」がtrueでなければ
+	if (skipMode >= 3 && !elm.force) {
+		elm.canskip = true;
+	}
+	
+	return doWait(elm);
+} incontextof kag;

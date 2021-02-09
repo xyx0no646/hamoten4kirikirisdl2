@@ -1,0 +1,124 @@
+/*****************************************************************************
+ その他の関数
+******************************************************************************/
+
+//==============================================================================
+// 使用辞書配列
+
+var globfunc = %[];
+
+
+/*
+	strの文字数を見て、widthに足りない分だけ全角スペースを連結して返す
+*/
+globfunc.getWideSpacesAsPad = function(width, str)
+{
+	var len = width - str.length;
+	if (len < 1) {
+		return "";
+	}
+	
+	var res = "";
+	
+	for (var i=0; i<len; i++) {
+		res += "　";
+	}
+	
+	return res;
+} incontextof kag;
+
+
+/*
+	指定したエンディングのリンク項目を生成する
+	（エンディング回想用）
+*/
+globfunc.generateEndingItemLinkForExtra = function(mp)
+{
+	TAG.link(%[
+		target  : "*replay_ed",
+		onenter : "sndfunc.seSelect();",
+		exp     : "sndfunc.seDecide(); f.prepare_ed = '%s';".sprintf(mp.id),
+		hint    : mp.hint
+	]);
+} incontextof kag;
+
+//==============================================================================
+// 関数
+
+// ラジアン値を返す
+/*function getRadian(agl)
+{
+	return (2 * Math.PI) / 360 * agl;
+}*/
+
+// レイヤを操作（laycountをオーバーライド）
+function rebuildLayers(lay, msg)
+{
+	kag.tagHandlers.laycount(%[
+		"layers" => lay,
+		"messages" => msg
+	]);
+}
+
+// オブジェクトのプロパティを返す
+// name, value1, value2, size, hint, value3
+
+function getObjectProperty(cid, num)
+{
+	if (is_btlCommand(cid)) {
+		return global.btlCommand[cid][num];
+	}
+	else if (is_aclCommand(cid)) {
+		return global.aclCommand[cid][num];
+	}
+	else if (is_vrtCommand(cid)) {
+		return global.vrtCommand[cid][num];
+	}
+	else {
+		return false;
+	}
+}
+
+// オブジェクトの種別を判定
+function is_btlCommand(cid)
+{
+	var tmp;
+	
+	try {
+		tmp = global.btlCommand[cid][0];
+	}
+	catch {
+		return false;
+	}
+	
+	return true;
+}
+
+function is_aclCommand(cid)
+{
+	var tmp;
+	
+	try {
+		tmp = global.aclCommand[cid][0];
+	}
+	catch {
+		return false;
+	}
+	
+	return true;
+}
+
+function is_vrtItem(cid)
+{
+	var tmp;
+	
+	try {
+		tmp = global.vrtItem[cid][0];
+	}
+	catch {
+		return false;
+	}
+	
+	return true;
+}
+

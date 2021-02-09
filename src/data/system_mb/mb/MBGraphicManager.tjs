@@ -1,0 +1,503 @@
+/******************************************************************************
+	system_mb/mb/MBGraphicManager.tjs
+	
+	graphic/配下のオブジェクトを管理する
+*******************************************************************************/
+
+
+class MBGraphicManager extends MBObject
+{
+	// プロパティ
+	
+	
+	// インスタンス変数
+	var objManagingLayersArray = [];	// トランジション処理を委託されたレイヤの参照配列
+	
+	// クラス変数
+	var objHSStoredHash    = %[];
+	var objHumanSystemHash = %[];	// 立ち絵レイヤオブジェクトのハッシュ
+	
+	// 管理オブジェクト
+	var objCartainController;	// 暗幕
+	var objSandRiver;	// 砂川
+	var objLoadingCartain;	// ロード中の暗幕
+	var objCinemat;	// シネマット
+	
+	
+	function MBGraphicManager(win)
+	{
+		// コンストラクタ
+		
+		super.MBObject(win);
+		
+		objCartainController = new MBCartainController(window);
+		
+		objHumanSystemHash.lead   = new MBHumanSystem(window, 'lead', 0);
+		objHumanSystemHash.left   = new MBHumanSystem(window, '', 1);
+		objHumanSystemHash.center = new MBHumanSystem(window, '', 2);
+		objHumanSystemHash.right  = new MBHumanSystem(window, '', 3);
+		
+		objHumanSystemHash.lead.fore[0].name   = '主人公レイヤ表';
+		objHumanSystemHash.left.fore[0].name   = '左立ち絵レイヤ表';
+		objHumanSystemHash.right.fore[0].name  = '右立ち絵レイヤ表';
+		objHumanSystemHash.center.fore[0].name = '中央立ち絵レイヤ表';
+		
+		objHumanSystemHash.lead.back[0].name   = '主人公レイヤ裏';
+		objHumanSystemHash.left.back[0].name   = '左立ち絵レイヤ裏';
+		objHumanSystemHash.right.back[0].name  = '右立ち絵レイヤ裏';
+		objHumanSystemHash.center.back[0].name = '中央立ち絵レイヤ裏';
+		
+		objCinemat = new MBCinematController(window);
+	}
+	
+	function finalize()
+	{
+		// ファイナライザ
+		
+		invalidate objHumanSystemHash.lead if (objHumanSystemHash.lead !== void);
+		invalidate objHumanSystemHash.left if (objHumanSystemHash.left !== void);
+		invalidate objHumanSystemHash.right if (objHumanSystemHash.right !== void);
+		invalidate objHumanSystemHash.center if (objHumanSystemHash.center !== void);
+		invalidate objHumanSystemHash if (objHumanSystemHash !== void);
+		
+		invalidate objHSStoredHash.lead if (objHSStoredHash.lead !== void);
+		invalidate objHSStoredHash.left if (objHSStoredHash.left !== void);
+		invalidate objHSStoredHash.right if (objHSStoredHash.right !== void);
+		invalidate objHSStoredHash.center if (objHSStoredHash.center !== void);
+		invalidate objHSStoredHash if (objHSStoredHash !== void);
+		
+		invalidate objCinemat if (objCinemat !== void);
+		invalidate objCartainController if (objCartainController !== void);
+		invalidate objSandRiver if (objSandRiver !== void);
+		invalidate objLoadingCartain if (objLoadingCartain !== void);
+		
+		super.finalize(...);
+	}
+	
+	
+	/**************************************************************************
+		暗幕関連
+	***************************************************************************/
+	
+	function bcMakeCartain()
+	{
+		// 暗幕を作る
+		
+		objCartainController.prepareCartains();
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function bcLoadImages(elm)
+	{
+		// 暗幕オブジェクトの指定ページに画像をロード
+		
+		var page = elm.page;
+		var fname = elm.storage;
+		
+		if (page == "") {
+			page = 'back';
+		}
+		
+		if (fname == "") {
+			fname = 'clearmat';
+		}
+		
+		objCartainController.loadImages(page, fname);
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function bcPutAway()
+	{
+		// カーテンを片付ける
+		
+		objCartainController.destoryCartains();
+	}
+	
+	
+	/**************************************************************************
+		立ち絵関連
+	***************************************************************************/
+	
+	function hsPrepareImages(elm)
+	{
+		// 立ち絵を準備する
+		
+		var obj = objHumanSystemHash[elm.on];
+		
+		obj.activate();
+		
+		obj.setBaseDir(elm.who) if (elm.who !== void);
+		
+		// bodyと同番のwareがある場合は必ず付ける
+		if (elm.body != "" && elm.ware == "") {
+			if (elm.body == 'humanclear') {
+				elm.ware = 'humanclear';
+			}
+			else {
+				var wf   = 'ware/' + elm.body.charAt(0);
+				if (Storages.isExistentStorage(sysfunc.getPathCharImage(elm.who + '/' + wf + '.tlg'))) {
+					elm.ware = wf;
+				}
+			}
+		}
+		
+		obj.emuBacklay();
+		obj.prepTrans(0, elm.body) if (elm.body !== void);
+		obj.prepTrans(1, elm.face) if (elm.face !== void);
+		obj.prepTrans(2, elm.glass, 'mul') if (elm.glass !== void);
+		obj.prepTrans(3, elm.ware) if (elm.ware !== void);
+		obj.prepTrans(4, elm.exp1) if (elm.exp1 !== void);
+		obj.prepTrans(5, elm.exp2) if (elm.exp2 !== void);
+		obj.prepTrans(6, elm.mat, 'mul') if (elm.mat !== void);
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function hsUpdateForWink()
+	{
+		// 目パチ設定適用のためにアップデート
+		
+		objHumanSystemHash.lead.updateForWink();
+		objHumanSystemHash.left.updateForWink();
+		objHumanSystemHash.center.updateForWink();
+		objHumanSystemHash.right.updateForWink();
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function hsChangeProperties(elm)
+	{
+		// 立ち絵の各種プロパティを変更
+		
+		var obj = objHumanSystemHash[elm.on];
+		
+		// 位置
+		if (elm.left !== void && elm.top !== void) {
+			var nl = Math.round(elm.left);
+			var nt = Math.round(elm.top);
+			obj.setPosition(nl, nt);
+		}
+		
+		// サイズ
+		if (elm.width !== void && elm.height !== void) {
+			var nw = Math.abs(Math.ceil(elm.width));
+			var nh = Math.abs(Math.ceil(elm.height));
+			obj.setSizeTo(nw, nh);
+		}
+		
+		if (elm.opacity !== void) {
+			obj.setOpacity(Math.abs(Math.round(elm.opacity)));
+		}
+		
+		if (elm.visible !== void) {
+			obj.setVisibility(elm.visible);
+		}
+		
+		// レイヤ深度
+		if (elm.index !== void) {
+			obj.setAbsolute(elm.index);
+		}
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function hsChangeScale(elm)
+	{
+		// 立ち絵のスケールを変更
+		
+		var tmp = objHumanSystemHash[elm.on].basedir.split('/');
+		var who = objHumanSystemHash[elm.on].charID;
+		var reg = new RegExp('_b');
+		if (reg.test(who)) {
+			who = who.substr(0, who.indexOf('_'));
+		}
+		
+		var ware, exp1, exp2;
+		
+		if (elm.size == 'big') {
+			who = "%s_b".sprintf(who);
+		}
+		
+		var body_image = '1_1';
+		
+		hsPrepareImages(%[
+			on : elm.on,
+			who : who,
+			body : body_image,
+			face : 'face1/01',
+			ware : ware,
+			exp1 : exp1,
+			exp2 : exp2
+		]);
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function hsClearImages(elm)
+	{
+		// 立ち絵を無効化
+		
+		objHumanSystemHash[elm.on].disactivate();
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function hsClearAsTemporary()
+	{
+		// 立ち絵を一時的に無効化
+		/*
+			１、アクティブかどうかを確認
+			２、アクティブなら画像保持用の配列にimageNamesをアサイン
+			３、HumanSystemを非アクティブ化
+			４、１〜３を全立ち絵に対して繰り返す
+		*/
+		
+		var layers = ['lead', 'left', 'right', 'center'];
+		var i;
+		
+		for (i=0; i<layers.count; i++) {
+			if (!objHumanSystemHash[layers[i]].usingState) {
+				continue;
+			}
+			
+			objHSStoredHash[layers[i]] = [];
+			objHSStoredHash[layers[i]].assign(objHumanSystemHash[layers[i]].imageNames);
+			hsClearImages(%[on : layers[i]]);
+		}
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function hsRebuildFromTemporary()
+	{
+		// 立ち絵の一時無効化を解除
+		/*
+			上の逆
+		*/
+		
+		var layers = ['lead', 'center', 'left', 'right'];
+		var i;
+		
+		for (i=0; i<layers.count; i++) {
+			if (objHSStoredHash[layers[i]] === void) {
+				continue;
+			}
+			
+			var obj = objHumanSystemHash[layers[i]];
+			var store = objHSStoredHash[layers[i]];
+			
+			obj.activate();
+			
+			var j;
+			for (j=0; j<obj.layercount; j++) {
+				var storage = "humanclear";
+				var md = 'transp';
+				
+				if (store[j] != "") {
+					storage = store[j];
+				}
+				
+				if (j == 2 || j == 6) {
+					md = 'mul';
+				}
+				
+				obj.fore[j].loadImages(%[
+					storage : storage,
+					mode : md
+				]);
+				
+				obj.fore[j].visible = true;
+			}
+		}
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function hsRestructOnLoad()
+	{
+		// ロード時にキャラクタマネージャから呼ばれる、HumanSystemを再構築するメソッド
+		
+		objHumanSystemHash.lead.rebuildLayersByName();
+		objHumanSystemHash.center.rebuildLayersByName();
+		objHumanSystemHash.left.rebuildLayersByName();
+		objHumanSystemHash.right.rebuildLayersByName();
+	}
+	
+	
+	/**************************************************************************
+		ロードカーテン
+	***************************************************************************/
+	
+		function showLoadingCartain()
+	{
+		// ロード中カーテンを表示
+		
+		if (objLoadingCartain === void) {
+			objLoadingCartain = new global.GraphicLayer(window, window.fore.base);
+			objLoadingCartain.absolute = MBLayerAbs.loadCartain;
+			objLoadingCartain.loadImages(%[storage : 'loadingmat']);
+			objLoadingCartain.setSizeToImageSize();
+			objLoadingCartain.opacity = 255;
+			objLoadingCartain.hitType = htMask;
+		}
+		else {
+			objLoadingCartain.parent = window.fore.base;
+			objLoadingCartain.absolute = MBLayerAbs.loadCartain;
+		}
+		
+		objLoadingCartain.hitThreshold = 0;	// 全域不透過
+		objLoadingCartain.visible = true;
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function hideLoadingCartain()
+	{
+		// ロード中カーテンを隠す
+		
+		if (objLoadingCartain === void || !isvalid(objLoadingCartain)) {
+			return;
+		}
+		
+		objLoadingCartain.visible = false;
+		objLoadingCartain.hitThreshold = 256;
+	}
+	
+	
+	/**************************************************************************
+		システムインタフェース
+	***************************************************************************/
+	
+	function setDelegationForTrans(obj)
+	{
+		// トランジション委託オブジェクトを追加
+		
+		objManagingLayersArray.add(obj);
+		
+		return objManagingLayersArray.count - 1;
+	}
+	
+	function unsetDelegationForTrans(num)
+	{
+		// トランジション委託オブジェクトを解放
+		
+		if (num < 0 || num >= objManagingLayersArray.count) {
+			return;
+		}
+		
+		objManagingLayersArray.erase(num);
+	}
+	
+	function startBacklayEmulation()
+	{
+		// 配下のオブジェクトに対して[backlay]エミュレーションを指令
+		
+		objHumanSystemHash.lead.emuBacklay();
+		objHumanSystemHash.left.emuBacklay();
+		objHumanSystemHash.right.emuBacklay();
+		objHumanSystemHash.center.emuBacklay();
+		
+		objCartainController.emuBacklay();
+		objCinemat.emuBacklay();
+		
+		var i;
+		for (i=0; i<objManagingLayersArray.count; i++) {
+			objManagingLayersArray[i].emuBacklay();
+		}
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function finishTransitions()
+	{
+		// 配下のトランジションの事後処理を行う
+		
+		objHumanSystemHash.lead.restructLayers();
+		objHumanSystemHash.left.restructLayers();
+		objHumanSystemHash.right.restructLayers();
+		objHumanSystemHash.center.restructLayers();
+		
+		objCartainController.restructLayers();
+		objCinemat.restructLayers();
+		
+		var i;
+		for (i=0; i<objManagingLayersArray.count; i++) {
+			objManagingLayersArray[i].restructLayers();
+		}
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function stopAllTransitions()
+	{
+		// 配下のトランジションを全て停止
+		
+		// 暗幕
+		objCartainController.stopTrans() if (objCartainController !== void);
+		objCinemat.stopTrans if (objCinemat !== void);
+		
+		objHumanSystemHash.lead.stopTrans();
+		objHumanSystemHash.left.stopTrans();
+		objHumanSystemHash.right.stopTrans();
+		objHumanSystemHash.center.stopTrans();
+		
+		var i;
+		for (i=0; i<objManagingLayersArray.count; i++) {
+			objManagingLayersArray[i].stopTrans();
+		}
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function save()
+	{
+		// セーブ
+		
+		var dict = %[
+			hslead   : objHumanSystemHash.lead.save(),
+			hsleft   : objHumanSystemHash.left.save(),
+			hsright  : objHumanSystemHash.right.save(),
+			hscenter : objHumanSystemHash.center.save()
+		];
+		
+		dict.cinemat = objCinemat.save();
+		
+		if (objHSStoredHash.lead !== void && isvalid(objHSStoredHash.lead)) {
+			dict.hstmplead   = objHSStoredHash.lead;
+			dict.hstmpleft   = objHSStoredHash.left;
+			dict.hstmpright  = objHSStoredHash.right;
+			dict.hstmpcenter = objHSStoredHash.center;
+		}
+		
+		return dict;
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function load(dict)
+	{
+		// ロード
+		
+		// 暗幕は必ず破棄する
+		objCartainController.destroyCartains();
+		
+		try {
+			objHumanSystemHash.lead.load(dict.hslead);
+			objHumanSystemHash.left.load(dict.hsleft);
+			objHumanSystemHash.right.load(dict.hsright);
+			objHumanSystemHash.center.load(dict.hscenter);
+			
+			if (dict.hstmplead !== void && isvalid(dict.hstmplead)) {
+				objHSStoredHash.lead = dict.hstmplead;
+				objHSStoredHash.left = dict.hstmpleft;
+				objHSStoredHash.right = dict.hstmpright;
+				objHSStoredHash.center = dict.hstmpcenter;
+			}
+		}
+		catch {}
+		
+		objCinemat.load(dict.cinemat);
+	}
+}

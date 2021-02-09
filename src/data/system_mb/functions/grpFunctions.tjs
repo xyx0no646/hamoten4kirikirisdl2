@@ -1,0 +1,153 @@
+/******************************************************************************
+	functions/grpFunctions.tjs
+	
+	グラフィック関連関数群
+*******************************************************************************/
+
+// 格納用辞書配列
+var grputil = %[];
+
+// この関数で使う変数格納用の辞書配列
+var grpparam = %[];
+
+
+//==============================================================================
+// ユーティリティ関数
+
+// すべての前景レイヤにblackmatまたは指定ファイルをロードする
+grputil.loadImagesToAll = function(fn='blackmat', pg='back')
+{
+	var i;
+	for (i=0; i<kag.fore.layers.count; i++) {
+		TAG.image(%[
+			layer : "%d".sprintf(i),
+			page : pg,
+			storage : fn
+		]);
+	}
+} incontextof kag;
+
+//==============================================================================
+// HumanSystem操作用
+
+// レイヤ構造を保持したまま立ち位置を変える
+grputil.copyHumanFromTo = function(from, to)
+{
+	/*
+		作業としては、
+		
+		１、コピー元とコピー先を特定
+		２、コピー先のベースフォルダを設定
+		３、コピー先が休眠中ならたたき起こす
+		４、コピー先の裏レイヤにコピー元の表レイヤをアサインする
+	*/
+	var src = GraphicManager.objHumanSystemHash[from];
+	var tg = GraphicManager.objHumanSystemHash[to];
+	
+	var tmparray = global.charinfo[src.charID].faceFile.split("/");
+	var tmpnum = tmparray.find(src.charID);
+	var face = "%s/%s".sprintf(
+		tmparray[tmpnum + 1],
+		tmparray[tmpnum + 2].substr(0, tmparray[tmpnum + 2].indexOf("_"))
+	);
+	
+	tg.activate();
+	
+	tg.basedir = src.basedir;
+	tg.charID = src.charID;
+	
+	tg.imageNames.assignStruct(src.imageNames);
+	
+	var i;
+	for (i=0; i<tg.layercount; i++) {
+		tg.back[i].assignImages(src.fore[i]);
+		if (i == 0) {
+			tg.back[i].visible = true;
+		}
+		else {
+			tg.back[i].assignVisibleState(src.fore[i]);
+		}
+	}
+	
+	tg.prepTrans(1, face);
+} incontextof kag;
+
+// 拡張backlay
+grputil.expandedBacklay = function()
+{
+	GraphicManager.startBacklayEmulation();
+} incontextof kag;
+
+// 拡張wt
+grputil.expandedWaitTrans = function()
+{
+	GraphicManager.finishTransitions();
+} incontextof kag;
+
+// 拡張cinemat
+grputil.expandedCinemat = function(mp)
+{
+	kag.back.layers[4].fillRect(0, 0, 800, 600, 0xff000000);
+	
+	var ileft   = 0;
+	var itop    = 35;
+	var iwidth  = 800;
+	var iheight = 450;
+	
+	if (mp.ileft !== void) {
+		ileft = mp.ileft;
+	}
+	
+	if (mp.itop !== void) {
+		itop = mp.itop;
+	}
+	
+	if (mp.iwidth !== void) {
+		iwidth = mp.iwidth;
+	}
+	
+	if (mp.iheight !== void) {
+		iheight = mp.iheight;
+	}
+	
+	back.layers[4].fillRect(ileft, itop, iwidth, iheight, 0x00000000);
+} incontextof kag;
+
+//------------------------------------------------------------------------------
+
+grputil.getFaceFile = function(who)
+{
+	// 表情ファイルを取得
+	
+	grputil.CheckCharacterIdRegisterd(who);
+	
+	var face = charinfo[who].faceFile;
+	var res  = sysfunc.getPathCharImage("%s/%s".sprintf(who, face));
+	
+	return res;
+} incontextof kag;
+
+//------------------------------------------------------------------------------
+
+grputil.setFlagToCGView = function(file)
+{
+	// 指定したイベントCGを閲覧済みにする
+	
+	if (CGViewer.isTargetFile(file)) {
+		sf.MBCGViewKnownCheck[file] = true;
+	}
+} incontextof kag;
+
+//------------------------------------------------------------------------------
+// 指定したキャラクタIDが登録済みかどうかをチェックし、
+// 登録されていなければ登録する
+grputil.CheckCharacterIdRegisterd = function(id)
+{
+	if (charinfo[id] == void) {
+		charinfo[id] = _CharManager.getCharInfo(id);
+		if (charinfo[id] == void) {
+			charinfo[id] = _CharManager.addCharInfo(id);
+		}
+	}
+} incontextof kag;
+

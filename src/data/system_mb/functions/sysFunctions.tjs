@@ -1,0 +1,169 @@
+/******************************************************************************
+	functions/sysFunctions.tjs
+	
+*******************************************************************************/
+
+//==============================================================================
+// 使用する辞書配列
+
+var sysparam = %[];
+var sysfunc = %[];
+
+
+//==============================================================================
+// キーボードでメニューを選んでいるときは強制的にカーソル合わせをONにする
+
+sysfunc.confSetCursorByKB = function()
+{
+	sf.setCursorByKB = true;
+} incontextof kag;
+
+// それを解除する関数
+
+sysfunc.confResetCursorByKB = function()
+{
+	if (sf.setCursorByKB) {
+		sf.setCursorByKB = false;
+	}
+} incontextof kag;
+
+
+//==============================================================================
+// メイン会話ウィンドウを変更する
+
+sysfunc.setMainMessageLayer = function(num = 1)
+{
+	kag.flags.mainMessaegLayer = "message%d".sprintf(num);
+} incontextof kag;
+
+
+//==============================================================================
+// パス取得関数
+
+// 基本関数
+sysfunc.getPathTo = function(type, path)
+{
+	if (
+		path == 'blackmat' ||
+		path == 'clearmat'
+	) {
+		return path;
+	}
+	else {
+		return "%s%s".sprintf(MBFilePath[type], path);
+	}
+} incontextof kag;
+
+// 背景画像
+sysfunc.getPathBGImage = function(path)
+{
+	var storage = sysfunc.getPathTo('images', "bgimage/%s".sprintf(path));
+	
+	if (!Storages.isExistentStorage(storage)) {
+		storage = sysfunc.getPathTo('eximages', "bgimage/%s".sprintf(path));
+	}
+	
+	return storage;
+} incontextof kag;
+
+// 背景画像（追加分）
+sysfunc.getPathBGImageEx = function(path)
+{
+	return sysfunc.getPathTo('eximages', "bgimage/%s".sprintf(path));
+} incontextof kag;
+
+// 一般画像
+sysfunc.getPathImage = function(path)
+{
+	return sysfunc.getPathTo('images', "image/%s".sprintf(path));
+} incontextof kag;
+
+// 一般画像（追加分）
+sysfunc.getPathImageEx = function(path)
+{
+	return sysfunc.getPathTo('eximages', "image/%s".sprintf(path));
+} incontextof kag;
+
+// 立ち絵画像
+sysfunc.getPathCharImage = function(path)
+{
+	var str = sysfunc.getPathTo('images', "fgimage/%s".sprintf(path));
+	
+	return str;
+} incontextof kag;
+
+// 立ち絵画像（追加分）
+sysfunc.getPathCharImageEx = function(path)
+{
+	var str = sysfunc.getPathTo('eximages', "fgimage/%s".sprintf(path));
+	
+	return str;
+} incontextof kag;
+
+// イベント画像
+sysfunc.getPathEventImage = function(path)
+{
+	return sysfunc.getPathTo('events', path);
+} incontextof kag;
+
+// イベント画像（追加分）
+sysfunc.getPathEventImageEx = function(path)
+{
+	return sysfunc.getPathTo('exevents', path);
+} incontextof kag;
+
+// ムービー
+sysfunc.getPathMovie = function(path)
+{
+	return sysfunc.getPathTo('movies', path);
+} incontextof kag;
+
+//==============================================================================
+// その他ユーティリティ関数
+
+// ウェイトをかける
+sysfunc.setWait = function(t = 100)
+{
+	var start = System.getTickCount();
+	while (t > (System.getTickCount() - start)) {
+		;
+	}
+	
+	return;
+} incontextof kag;
+
+// すべての進行ボタンの有効/無効を切り替える
+sysfunc.setClickStateTo = function(bl = true)
+{
+	/*kag.blackOutCartain.setClickStateTo(bl);
+	dm("[MBSystem] Now condactor click state: %s".sprintf(bl));*/
+} incontextof kag;
+
+// 右クリックの呼び出しラベルを取得
+sysfunc.getContextMenuLabel = function()
+{
+	var res = "*rclick_default";
+	
+	switch (SystemManager.strContextMenuType) {
+		case "story":
+			res = "*rclick_normal";
+			break;
+		
+		case "extrastory":
+			res = "*rclick_extrastory";
+			break;
+		
+		case "cgview":
+			res = "*rclick_cgview";
+			break;
+		
+		case "endlist":
+			res = "*rclick_endlist";
+			break;
+		
+		default:
+			break;
+	}
+	
+	return res;
+} incontextof kag;

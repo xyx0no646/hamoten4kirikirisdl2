@@ -1,0 +1,213 @@
+/******************************************************************************
+	KAGのメソッドをいろいろhogeる。
+*******************************************************************************/
+
+//------------------------------------------------------------------------------
+// onMouseWheelオーバーライド
+// 独自のヒストリを呼ぶようにする
+kag.onMouseWheel = function(shift, delta, x, y)
+{
+	// ホイールが回転した
+	global.Window.onMouseWheel(...);
+    // メッセージ窓のホイール処理
+    if (inSleep && current.hasWheel()) {
+        current.processWheel(shift, delta, x, y);
+        return;
+    }
+	if(!historyLayer.visible)
+	{
+		if(delta > 0) {
+			// BackPack、環境設定が開いているときと、
+			// メッセージ枠を隠している最中は無効にする
+			if (
+				SystemManager.intPlayDataStoragerState ||
+				SystemManager.blConfigMenuOpened       ||
+				SystemManager.blMsgHidingAsTemp
+			) {
+				// do nothing
+			}
+			else {
+				showHistory();
+				SystemManager.destroyContextMenu();
+			}
+		}
+		else if(System.getTickCount() - lastHistoryHiddenTick > 150) 
+				onPrimaryClick(); // クリックをエミュレート
+		// ↑ tick を比較しているのは、メッセージ履歴を隠す操作とホイールを
+		// 手前に回す操作が連続した場合に勝手に読み進むのをある程度防ぐ仕掛け
+	}
+	else
+	{
+		// メッセージ履歴にイベントを垂れ流す
+		historyLayer.windowMouseWheel(shift, delta, x, y);
+	}
+} incontextof kag;
+
+//------------------------------------------------------------------------------
+// showHistoryオーバーライド
+// outputがfalseのときは表示しないように
+
+kag.showHistory = function()
+{
+	// メッセージ履歴レイヤを表示する
+	
+	if (!kag.historyWriteEnabled) {
+		return;
+	}
+	
+	historyLayer.parent = fore.base; // メッセージ履歴レイヤの親も再設定
+	historyLayer.absolute = 2000000;
+	historyLayer.dispInit();
+	historyShowing = true;
+	if(typeof this.showHistoryMenuItem != "undefined")
+		showHistoryMenuItem.checked = true;
+	setMenuAccessibleAll();
+} incontextof kag;
+
+//------------------------------------------------------------------------------
+// processKeysオーバーライド
+// 標準キーバインドを一部無効化
+kag.processKeys = function(key, shift)
+{
+	if(checkProceedingKey(key, shift)) return;
+	
+	if (rightClickEnabled && transCount < 1 && conductor == mainConductor) {
+		if(key == #'F')
+		{
+			// メッセージスキップ
+			if (SceneManager.blMessageSkipEnabled) {
+				onSkipToNextStopMenuItemClick();
+				SystemManager.destroyContextMenu();
+			}
+			return;
+		}
+		
+		if (key == #'P') {
+			if (
+				(SceneManager.blSceneSkipEnabled && SceneManager.getSceneStatus()) ||
+				(SystemManager.strContextMenuType == 'endlist' || SystemManager.strContextMenuType == 'cgview')
+			) {
+				// シーンスキップ
+				process("", "*scene-end");
+				MBSystem.removeTempObject(tf.cutinctrl);
+				SystemManager.destroyContextMenu();
+				return;
+			}
+		}
+		
+		if(key == #'A')
+		{
+			// 自動読み進め
+			hideMouseCursor();
+			onAutoModeMenuItemClick();
+			SystemManager.destroyContextMenu();
+			return;
+		}
+	
+		if(key == #'R')
+		{
+			// メッセージ履歴を表示
+			showHistory();
+			SystemManager.destroyContextMenu();
+			return;
+		}
+		
+		if (key == #'H')
+		{
+			// メッセージ枠を隠す（独自処理）
+			if (SystemManager.blMsgHideEnabled) {
+				SystemManager.hideMessageLayerAsTemp();
+				SystemManager.destroyContextMenu();
+			}
+			return;
+		}
+	}
+	
+	if (key == #'Q') {
+		// 終了
+		//close();
+		//SystemManager.destroyContextMenu();
+		return;
+	}
+
+	if(key == VK_ESCAPE || key == VK_APPS)
+	{
+		// メッセージを消す
+		if(typeof this.rightClickMenuItem != "undefined" &&
+			rightClickMenuItem.enabled)
+		{
+			rightClickMenuItem.click(); // クリックをエミュレート
+			return;
+		}
+	}
+} incontextof kag;
+
+//==============================================================================
+// setUserSpeed()をハック
+// オートモードではオートモード用の文字速度に対応するように
+
+kag.setUserSpeed = function()
+{
+	// ユーザの選択した文字表示スピードを設定
+	// この関数を読んだ時点ですでに userChSpeed には
+	// あたらしい値が設定されているとみなす。
+	// あるいは、ラベルごとに、その区域が既読か未読かで
+	// 表示スピードを変える目的で呼ばれる
+	if(chUserMode)
+	{
+		// オートモードの場合は問答無用で変更
+		if (autoMode) {
+			chSpeed = sf.userconfig.amCharSpeed;
+		}
+		
+		// それ以外の場合
+		else {
+			if(getCurrentRead() && SceneManager.getSceneStatus()) {
+				chSpeed = userCh2ndSpeed==-1?userChSpeed:userCh2ndSpeed; // 既読
+			}
+			else {
+				chSpeed = userChSpeed; // 未読
+			}
+		}
+		
+		//dm(currentRecordName, chSpeed);
+	}
+	if(!skipMode) actualChSpeed = chSpeed;
+} incontextof kag;
+
+
+//==============================================================================
+// cancelAutoMode() / enterAutoMode()をハック
+// 自動読み進めを選択したときに文字スピードの変更を強制的にかける
+
+kag.cancelAutoMode = function()
+{
+	// 自動読みすすみモードのキャンセル
+	if(autoMode)
+	{
+		autoMode = false;
+		if(typeof this.autoModeMenuItem !== "undefined")
+			autoModeMenuItem.checked = false;
+		var t = conductor.lastTagName;
+		if(t == 'p'){
+			showPageBreak();
+		}
+		else if(t == 'l'){
+			showLineBreak(%[canskip: false]);
+		}
+	}
+	
+	setUserSpeed();
+} incontextof kag;
+
+kag.enterAutoMode = function()
+{
+	// 自動読みすすみモードに入る
+	if(typeof this.autoModeMenuItem !== "undefined")
+		autoModeMenuItem.checked = true;
+	if(inStable)
+		onPrimaryClick();
+	autoMode = true;
+	
+	setUserSpeed();
+} incontextof kag;

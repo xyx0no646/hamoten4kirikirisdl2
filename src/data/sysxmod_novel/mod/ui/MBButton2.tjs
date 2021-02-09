@@ -1,0 +1,27 @@
+/******************************************************************************
+	system_xmb/xmb/ui/MBButton2.tjs
+*******************************************************************************/
+
+class MBButton2 extends MBButton
+{
+	function MBButton2(win, par)
+	{
+		super.MBButton(...);
+	}
+	
+	function finalize()
+	{
+		super.finalize(...);
+	}
+	
+	function onMouseDown(x, y, button, shift)
+	{
+		if (button == mbRight)
+		{
+			parent.onRightClickedOnChild();
+			return;
+		}
+		
+		super.onMouseDown(...);
+	}
+}

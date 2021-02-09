@@ -1,0 +1,114 @@
+/******************************************************************************
+	system_xmb/xmb/system/storymap/XMBStoryMapBGLayer.tjs
+*******************************************************************************/
+
+
+class XMBStoryMapBGLayer extends KAGLayer
+{
+	// Member Variables
+	var isNewLayer = false;
+	var BgImage = "storymap/background";
+	var owner;
+	
+	// スクロールバーのためにdispStartをプロパティに加える（intCurrentStartIDのラッパ）
+	property dispStart {
+		setter(num) {
+			if (num < 0) {
+				num = 0;
+			}
+			else if (num > owner.intMaxRowNumber) {
+				num = owner.intMaxRowNumber;
+			}
+			
+			owner.intCurrentStartID = owner.objColNames.count * num;
+		}
+		
+		getter() {
+			return owner.intCurrentStartID \ owner.objColNames.count;
+		}
+	}
+	
+	
+	function XMBStoryMapBGLayer(win, par, own)
+	{
+		// The Constructor
+		
+		super.KAGLayer(win, par);
+		
+		owner = own;
+		
+		visible      = false;
+		left         = 0;
+		top          = 0;
+		width        = 800;
+		height       = 600;
+		absolute     = MBLayerAbs.storymap;
+		opacity      = 255;
+		hitType      = htMask;
+		hitThreshold = 0;
+		name         = 'ストーリーマップ';
+		
+		//loadImages(sysfunc.getPathImage(BgImage));
+	}
+	
+	function finalize()
+	{
+		// The Finalizer
+		
+		super.finalize(...);
+	}
+	
+	//==========================================================================
+	
+	function reinit()
+	{
+		// 親と重ね順を設定しなおす
+		
+		parent   = window.fore.base;
+		absolute = MBLayerAbs.storymap;
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function updatePageBySlidePane(updtestate)
+	{
+		// スライドペーンからページを描画
+		
+		owner.updateFrameState();
+		
+		if (updtestate) {
+			owner.updateButtonState();
+		}
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function onSelectedItemClick(sender)
+	{
+		owner.onSelectedItemClick(sender);
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function onEscapeKeyDown()
+	{
+		owner.hideForReturn();
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function onRightClickedOnChild()
+	{
+		onEscapeKeyDown();
+	}
+	
+	function onMouseDown(x, y, button, shift)
+	{
+		if (button == mbRight) {
+			onEscapeKeyDown();
+			return;
+		}
+		
+		super.onMouseDown(...);
+	}
+}

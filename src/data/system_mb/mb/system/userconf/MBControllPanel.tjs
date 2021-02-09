@@ -1,0 +1,656 @@
+/******************************************************************************
+	system_mb/mb/system/userconf/MBControllPanel.tjs
+*******************************************************************************/
+
+class MBControllPanel extends MBComponentLayer
+{
+	var owner;	// オーナー
+	var isNewLayer = true;
+	
+	var objSectionSelectorArray = [];	// セクションセレクタ
+	
+	var objBGMVolumePanel;	// BGM調整パネル
+	var objBGMMuteButton;	// BGMミュート
+	var intBGMMutedVolume;	// ミュート前のボリューム兼フラグ
+	
+	var objSEVolumePanel;	// SE調整パネル
+	var objSEMuteButton;	// SEミュート
+	var intSEMutedVolume;	// ミュート前のボリューム兼フラグ
+	
+	var objCharSpeedFastButton;	// 「速い」ボタン
+	var objCharSpeedNormalButton;	// 「普通」ボタン
+	var objCharSpeedSlowButton;	// 「遅い」ボタン
+	var objCharSpeedNowaitButton;	// 「ノーウェイト」ボタン
+	var objCharSpeedTestLayer;	// テスト文表示領域
+	var intCharSpeed;	// 現在の文字表示速度
+	
+	var objWinkOffButton;	//  目パチ無効ボタン
+	var objWinkOnButton;	// 目パチ有効ボタン
+	var blWinkEnabled;	// 目パチが有効かどうか
+	
+	var objCursorSnapEnableButton;	// スナップ有効ボタン
+	var objCursorSnapDisableButton;	// スナップ無効ボタン
+	var blSetCursor;		// スナップが有効かどうか
+	
+	var objCloseButton;	// キャンセルボタン
+	
+	var intCursorLevel;	// カーソル深度
+	var objCurrentSectionSelector;	// 現在のセクションのセレクタ
+	
+	var refFocusMember;
+	
+	var timer;
+	var counter;
+	
+	
+	function MBControllPanel(win, par, own)
+	{
+		super.MBComponentLayer(win, par);
+		
+		owner = own;
+		
+		setImageSize(800, 600);
+		loadImages(%[storage : "pref_bg"]);
+		setSizeToImageSize();
+		setPos(0, 0);
+		opacity = 0;
+		name = '環境設定ベースレイヤ';
+		focusable = true;
+		
+		// 現在の設定値を得る
+		intBGMMutedVolume = sf.userconfig.bgmMutedVolume;
+		intSEMutedVolume = sf.userconfig.seMutedVolume;
+		blWinkEnabled = sf.userconfig.winkEnabled;
+		blSetCursor = sf.userconfig.setCursor;
+		intCharSpeed = sf.userconfig.charSpeed;
+	}
+	
+	function finalize()
+	{
+		// ファイナライザ
+		
+		invalidate timer if (timer !== void);
+		
+		SystemManager.fcRemoveStackMember(refFocusMember);
+		SystemManager.blConfigMenuOpened = false;
+		
+		var i;
+		for (i=0; i<objSectionSelectorArray.count; i++) {
+			invalidate objSectionSelectorArray[i] if (objSectionSelectorArray[i] !== void);
+		}
+		
+		invalidate objBGMVolumePanel if (objBGMVolumePanel !== void);
+		invalidate objBGMMuteButton if (objBGMMuteButton !== void);
+		
+		invalidate objSEVolumePanel if (objSEVolumePanel !== void);
+		invalidate objSEMuteButton if (objSEMuteButton !== void);
+		
+		invalidate objCharSpeedFastButton if (objCharSpeedFastButton !== void);
+		invalidate objCharSpeedNormalButton if (objCharSpeedNormalButton !== void);
+		invalidate objCharSpeedSlowButton if (objCharSpeedSlowButton !== void);
+		invalidate objCharSpeedNowaitButton if (objCharSpeedNowaitButton !== void);
+		invalidate objCharSpeedTestLayer if (objCharSpeedTestLayer !== void);
+		
+		invalidate objWinkOffButton if (objWinkOffButton !== void);
+		invalidate objWinkOnButton if (objWinkOnButton !== void);
+		
+		invalidate objCursorSnapEnableButton if (objCursorSnapEnableButton !== void);
+		invalidate objCursorSnapDisableButton if (objCursorSnapDisableButton !== void);
+		
+		invalidate objCloseButton if (objCloseButton !== void);
+		
+		
+		super.finalize(...);
+	}
+	
+	//--------------------------------------------------------------------------
+	
+		function show()
+	{
+		// レイヤを表示する
+		
+		SystemManager.acActivateCanceller();
+		
+		visible = true;
+		setMode();
+		focus();
+		timer = new Timer(onTimerShowing, '');
+		timer.interval = 10;
+		timer.enabled = true;
+	}
+	
+	function onTimerShowing()
+	{
+		// タイマーを使ってフェードイン
+		if (++counter > 5) {
+			timer.enabled = false;
+			invalidate timer if (timer !== void);
+			onEndOfShowing();
+			return;
+		}
+		opacity += 255 / 5;
+	}
+	
+	function onEndOfShowing()
+	{
+		counter = 0;
+		opacity = 255;
+		setMenuStack();
+		
+		SystemManager.acDisactivateCanceller();
+		SystemManager.blConfigMenuOpened = true;
+	}
+	
+	function hide()
+	{
+		// レイヤを隠す
+		
+		SystemManager.blConfigMenuOpened = false;
+		SystemManager.acActivateCanceller();
+		
+		saveUserConfig();
+		SystemManager.fcRemoveStackMember(refFocusMember);
+		
+		timer = new Timer(onTimerHiding, '');
+		timer.interval = 10;
+		timer.enabled = true;
+	}
+	
+	function onTimerHiding()
+	{
+		// タイマーを使ってフェードアウト
+		if (++counter > 5) {
+			timer.enabled = false;
+			invalidate timer if (timer !== void);
+			onEndOfHiding();
+			return;
+		}
+		
+		opacity -= 255 / 5;
+	}
+	
+	function onEndOfHiding()
+	{
+		owner.onControllPanelHasGone();
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function setControllPanel()
+	{
+		// ボタンを配置
+		
+		// BGM調整
+		objSectionSelectorArray[0] = new MBControllPanelSectionButton(window, this);
+		objSectionSelectorArray[0].setPos(43, 93);
+		
+		objBGMVolumePanel = new MBControllPanelAudioPane(window, this);
+		objBGMVolumePanel.makeBGMFader();
+		objBGMVolumePanel.setPos(193, 92);
+		objBGMVolumePanel.visible = true;
+		
+		// BGMミュート
+		objBGMMuteButton = new MBControllPanelAudioMuteButton(window, this);
+		objBGMMuteButton.setImageSize(154, 18);
+		objBGMMuteButton.setSizeToImageSize();
+		objBGMMuteButton.strBasicImageName = "pref_soundmute";
+		objBGMMuteButton.strSelectedImageName = "prefda_soundmute";
+		objBGMMuteButton.setPos(570, 94);
+		objBGMMuteButton.initState();
+		if (intBGMMutedVolume !== void) {
+			objBGMMuteButton.changeState();
+			objBGMVolumePanel.setFaderPosition(intBGMMutedVolume * 3);
+			objBGMVolumePanel.changeState(false);
+		}
+		objBGMMuteButton.enabled = true;
+		objBGMMuteButton.visible = true;
+		
+		objBGMVolumePanel.ptSectionSelector = objSectionSelectorArray[0];
+		objBGMVolumePanel.ptMuteButton = objBGMMuteButton;
+		objSectionSelectorArray[0].objCurrentChild = objBGMVolumePanel;
+		
+		
+		// SE調整
+		objSectionSelectorArray[1] = new MBControllPanelSectionButton(window, this);
+		objSectionSelectorArray[1].setPos(43, 172);
+		
+		objSEVolumePanel = new MBControllPanelAudioPane(window, this);
+		objSEVolumePanel.makeSEFader();
+		objSEVolumePanel.setPos(193, 169);
+		objSEVolumePanel.visible = true;
+		
+		// SEミュート
+		objSEMuteButton = new MBControllPanelAudioMuteButton(window, this);
+		objSEMuteButton.setImageSize(154, 18);
+		objSEMuteButton.setSizeToImageSize();
+		objSEMuteButton.strBasicImageName = "pref_soundmute";
+		objSEMuteButton.strSelectedImageName = "prefda_soundmute";
+		objSEMuteButton.setPos(570, 171);
+		objSEMuteButton.initState();
+		if (intSEMutedVolume !== void) {
+			objSEMuteButton.changeState();
+			objSEVolumePanel.setFaderPosition(intSEMutedVolume * 3);
+			objSEVolumePanel.changeState(false);
+		}
+		objSEMuteButton.enabled = true;
+		objSEMuteButton.visible = true;
+		
+		objSEVolumePanel.ptSectionSelector = objSectionSelectorArray[1];
+		objSEVolumePanel.ptMuteButton = objSEMuteButton;
+		objSectionSelectorArray[1].objCurrentChild = objSEVolumePanel;
+		
+		
+		// 「速い」ボタン
+		objSectionSelectorArray[2] = new MBControllPanelSectionButton(window, this);
+		objSectionSelectorArray[2].setPos(43, 249);
+		
+		objCharSpeedFastButton = new MBControllPanelCheckBox(window, this);
+		objCharSpeedFastButton.setImageSize(57, 17);
+		objCharSpeedFastButton.setSizeToImageSize();
+		objCharSpeedFastButton.strBasicImageName = "pref_chfast";
+		objCharSpeedFastButton.strSelectedImageName = "prefda_chfast";
+		objCharSpeedFastButton.setPos(205, 251);
+		objCharSpeedFastButton.intOptionValue = window.chSpeeds.fast;
+		objCharSpeedFastButton.initState();
+		if (intCharSpeed == objCharSpeedFastButton.intOptionValue) {
+			objCharSpeedFastButton.changeState();
+			objSectionSelectorArray[2].objCurrentChild = objCharSpeedFastButton;
+		}
+		objCharSpeedFastButton.enabled = true;
+		objCharSpeedFastButton.visible = true;
+		
+		// 「普通」ボタン
+		objCharSpeedNormalButton = new MBControllPanelCheckBox(window, this);
+		objCharSpeedNormalButton.setImageSize(58, 17);
+		objCharSpeedNormalButton.setSizeToImageSize();
+		objCharSpeedNormalButton.strBasicImageName = "pref_chnormal";
+		objCharSpeedNormalButton.strSelectedImageName = "prefda_chnormal";
+		objCharSpeedNormalButton.setPos(286, 251);
+		objCharSpeedNormalButton.intOptionValue = window.chSpeeds.normal;
+		objCharSpeedNormalButton.initState();
+		if (intCharSpeed == objCharSpeedNormalButton.intOptionValue) {
+			objCharSpeedNormalButton.changeState();
+			objSectionSelectorArray[2].objCurrentChild = objCharSpeedNormalButton;
+		}
+		objCharSpeedNormalButton.enabled = true;
+		objCharSpeedNormalButton.visible = true;
+		
+		// 「遅い」ボタン
+		objCharSpeedSlowButton = new MBControllPanelCheckBox(window, this);
+		objCharSpeedSlowButton.setImageSize(91, 17);
+		objCharSpeedSlowButton.setSizeToImageSize();
+		objCharSpeedSlowButton.strBasicImageName = "pref_chslow";
+		objCharSpeedSlowButton.strSelectedImageName = "prefda_chslow";
+		objCharSpeedSlowButton.setPos(375, 251);
+		objCharSpeedSlowButton.intOptionValue = window.chSpeeds.slow;
+		objCharSpeedSlowButton.initState();
+		if (intCharSpeed == objCharSpeedSlowButton.intOptionValue) {
+			objCharSpeedSlowButton.changeState();
+			objSectionSelectorArray[2].objCurrentChild = objCharSpeedSlowButton;
+		}
+		objCharSpeedSlowButton.enabled = true;
+		objCharSpeedSlowButton.visible = true;
+		
+		// 「ノーウェイト」ボタン
+		objCharSpeedNowaitButton = new MBControllPanelCheckBox(window, this);
+		objCharSpeedNowaitButton.setImageSize(147, 17);
+		objCharSpeedNowaitButton.setSizeToImageSize();
+		objCharSpeedNowaitButton.strBasicImageName = "pref_chnowait";
+		objCharSpeedNowaitButton.strSelectedImageName = "prefda_chnowait";
+		objCharSpeedNowaitButton.intOptionValue = 0;
+		objCharSpeedNowaitButton.initState();
+		objCharSpeedNowaitButton.setPos(490, 251);
+		if (intCharSpeed == objCharSpeedNowaitButton.intOptionValue) {
+			objCharSpeedNowaitButton.changeState();
+			objSectionSelectorArray[2].objCurrentChild = objCharSpeedNowaitButton;
+		}
+		objCharSpeedNowaitButton.enabled = true;
+		objCharSpeedNowaitButton.visible = true;
+		
+		// 文字表示テストレイヤー
+		objCharSpeedTestLayer = new MBContextMenuCharSpeedTestLayer(window, this);
+		objCharSpeedTestLayer.setPos(205, 288);
+		objCharSpeedTestLayer.visible = true;
+		
+		
+		// スナップ有効ボタン
+		objSectionSelectorArray[3] = new MBControllPanelSectionButton(window, this);
+		objSectionSelectorArray[3].setPos(43, 414);
+	
+		objCursorSnapEnableButton = new MBControllPanelCheckBox(window, this);
+		objCursorSnapEnableButton.setImageSize(129, 18);
+		objCursorSnapEnableButton.setSizeToImageSize();
+		objCursorSnapEnableButton.strBasicImageName = "pref_snapon";
+		objCursorSnapEnableButton.strSelectedImageName = "prefda_snapon";
+		objCursorSnapEnableButton.setPos(205, 413);
+		objCursorSnapEnableButton.intOptionValue = true;
+		objCursorSnapEnableButton.initState();
+		if (blSetCursor) {
+			objCursorSnapEnableButton.changeState();
+			objSectionSelectorArray[3].objCurrentChild = objCursorSnapEnableButton;
+		}
+		objCursorSnapEnableButton.enabled = true;
+		objCursorSnapEnableButton.visible = true;
+		
+		// スナップ無効ボタン
+		objCursorSnapDisableButton = new MBControllPanelCheckBox(window, this);
+		objCursorSnapDisableButton.setImageSize(129, 18);
+		objCursorSnapDisableButton.setSizeToImageSize();
+		objCursorSnapDisableButton.strBasicImageName = "pref_snapoff";
+		objCursorSnapDisableButton.strSelectedImageName = "prefda_snapoff";
+		objCursorSnapDisableButton.setPos(490, 413);
+		objCursorSnapDisableButton.intOptionValue = false;
+		objCursorSnapDisableButton.initState();
+		if (!blSetCursor) {
+			objCursorSnapDisableButton.changeState();
+			objSectionSelectorArray[3].objCurrentChild = objCursorSnapDisableButton;
+		}
+		objCursorSnapDisableButton.enabled = true;
+		objCursorSnapDisableButton.visible = true;
+		
+		
+		// 目パチ無効ボタン
+		objSectionSelectorArray[4] = new MBControllPanelSectionButton(window, this);
+		objSectionSelectorArray[4].setPos(43, 493);
+		
+		objWinkOffButton = new MBControllPanelCheckBox(window, this);
+		objWinkOffButton.setImageSize(148,16);
+		objWinkOffButton.setSizeToImageSize();
+		objWinkOffButton.strBasicImageName = "pref_winkoff";
+		objWinkOffButton.strSelectedImageName = "prefda_winkoff";
+		objWinkOffButton.setPos(205, 495);
+		objWinkOffButton.intOptionValue = false;
+		objWinkOffButton.initState();
+		if (!blWinkEnabled) {
+			objWinkOffButton.changeState();
+			objSectionSelectorArray[4].objCurrentChild = objWinkOffButton;
+		}
+		objWinkOffButton.enabled = true;
+		objWinkOffButton.visible = true;
+		
+		// 目パチ有効ボタン
+		objWinkOnButton = new MBControllPanelCheckBox(window, this);
+		objWinkOnButton.setImageSize(147,16);
+		objWinkOnButton.setSizeToImageSize();
+		objWinkOnButton.strBasicImageName = "pref_winkon";
+		objWinkOnButton.strSelectedImageName = "prefda_winkon";
+		objWinkOnButton.setPos(350, 495);
+		objWinkOffButton.intOptionValue = true;
+		objWinkOnButton.initState();
+		if (blWinkEnabled) {
+			objWinkOnButton.changeState();
+			objSectionSelectorArray[4].objCurrentChild = objWinkOnButton;
+		}
+		objWinkOnButton.enabled = true;
+		objWinkOnButton.visible = true;
+		
+		
+		// キャンセルボタン
+		if (objCloseButton === void) {
+			objCloseButton = new MBButton(window, this);
+			objCloseButton.setImageSize(107, 20);
+			objCloseButton.setSizeToImageSize();
+			objCloseButton.loadImages("r_cancel");
+			objCloseButton.left = 673;
+			objCloseButton.top = 560;
+		}
+		objCloseButton.visible = true;
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function setMenuStack()
+	{
+		// メニュースタックを作る
+		
+		var i;
+		for (i=0; i<objSectionSelectorArray.count; i++) {
+			if (i == 0) {
+				objSectionSelectorArray[i].objCursorMapHash.up = objCloseButton;
+			}
+			else {
+				objSectionSelectorArray[i].objCursorMapHash.up = objSectionSelectorArray[i - 1];
+			}
+			if (i >= objSectionSelectorArray.count - 1) {
+				objSectionSelectorArray[i].objCursorMapHash.down = objCloseButton;
+			}
+			else {
+				objSectionSelectorArray[i].objCursorMapHash.down = objSectionSelectorArray[i + 1];
+			}
+		}
+		
+		objCloseButton.objCursorMapHash.up = objSectionSelectorArray[objSectionSelectorArray.count - 1];
+		objCloseButton.objCursorMapHash.down = objSectionSelectorArray[0];
+		
+		// BGM
+		objSectionSelectorArray[0].objCursorMapHash.right = objBGMVolumePanel;
+		objSectionSelectorArray[0].objCursorMapHash.left = objBGMMuteButton;
+		objBGMMuteButton.objCursorMapHash.left = objBGMVolumePanel;
+		objBGMMuteButton.objCursorMapHash.right = objSectionSelectorArray[0];
+		
+		// SE
+		objSectionSelectorArray[1].objCursorMapHash.right = objSEVolumePanel;
+		objSectionSelectorArray[1].objCursorMapHash.left = objSEMuteButton;
+		objSEMuteButton.objCursorMapHash.left = objSEVolumePanel;
+		objSEMuteButton.objCursorMapHash.right = objSectionSelectorArray[1];
+		
+		// 文字表示速度
+		objSectionSelectorArray[2].objCursorMapHash.right = objCharSpeedFastButton;
+		objSectionSelectorArray[2].objCursorMapHash.left = objCharSpeedNowaitButton;
+		objCharSpeedFastButton.objCursorMapHash.left = objSectionSelectorArray[2];
+		objCharSpeedFastButton.objCursorMapHash.right = objCharSpeedNormalButton;
+		objCharSpeedNormalButton.objCursorMapHash.left = objCharSpeedFastButton;
+		objCharSpeedNormalButton.objCursorMapHash.right = objCharSpeedSlowButton;
+		objCharSpeedSlowButton.objCursorMapHash.left = objCharSpeedNormalButton;
+		objCharSpeedSlowButton.objCursorMapHash.right = objCharSpeedNowaitButton;
+		objCharSpeedNowaitButton.objCursorMapHash.left = objCharSpeedSlowButton;
+		objCharSpeedNowaitButton.objCursorMapHash.right = objSectionSelectorArray[2];
+		
+		// カーソルスナップ
+		objSectionSelectorArray[3].objCursorMapHash.right = objCursorSnapEnableButton;
+		objSectionSelectorArray[3].objCursorMapHash.left = objCursorSnapDisableButton;
+		objCursorSnapEnableButton.objCursorMapHash.left = objSectionSelectorArray[3];
+		objCursorSnapEnableButton.objCursorMapHash.right = objCursorSnapDisableButton;
+		objCursorSnapDisableButton.objCursorMapHash.left = objCursorSnapEnableButton;
+		objCursorSnapDisableButton.objCursorMapHash.right = objSectionSelectorArray[3];
+		
+		// ウィンドウモード
+		objSectionSelectorArray[4].objCursorMapHash.right = objWinkOffButton;
+		objSectionSelectorArray[4].objCursorMapHash.left = objWinkOnButton;
+		objWinkOffButton.objCursorMapHash.left = objSectionSelectorArray[4];
+		objWinkOffButton.objCursorMapHash.right = objWinkOnButton;
+		objWinkOnButton.objCursorMapHash.left = objWinkOffButton;
+		objWinkOnButton.objCursorMapHash.right = objSectionSelectorArray[4];
+		
+		refFocusMember = SystemManager.fcPushFocusStack(objSectionSelectorArray[0]);
+		SystemManager.fcApplyFocusTargetSearch();
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function saveUserConfig()
+	{
+		// 環境設定をシステム変数に記録する
+		sf.userconfig.bgmVolume = window.bgm.volume / 1000;
+		sf.userconfig.bgmMutedVolume = intBGMMutedVolume;
+		sf.userconfig.seVolume = window.se[0].currentVolume;
+		sf.userconfig.seMutedVolume = intSEMutedVolume;
+		sf.userconfig.charSpeed = intCharSpeed;
+		sf.userconfig.setCursor = blSetCursor;
+		sf.userconfig.winkEnabled = blWinkEnabled;
+		
+		window.saveSystemVariables();
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function changeBGMMutedState()
+	{
+		// BGMミュートボタンを押したときのアクション
+		
+		if (intBGMMutedVolume === void) {
+			// ミュート
+			
+			intBGMMutedVolume = window.bgm.volume / 1000;
+			
+			objBGMVolumePanel.setVolume(0);
+			objBGMVolumePanel.changeState(false);
+		}
+		else {
+			// ミュートから復帰
+			
+			objBGMVolumePanel.setVolume(intBGMMutedVolume);
+			objBGMVolumePanel.changeState(true);
+			
+			intBGMMutedVolume = void;
+		}
+	}
+	
+	function changeSEMutedState()
+	{
+		var i;
+		
+		// SEミュートボタンを押したときのアクション
+		if (intSEMutedVolume === void) {
+			// ミュート
+			
+			intSEMutedVolume = window.se[0].currentVolume;
+			
+			objSEVolumePanel.setVolume(0);
+			objSEVolumePanel.changeState(false);
+		}
+		else {
+			// ミュートから復帰
+			
+			objSEVolumePanel.setVolume(intSEMutedVolume);
+			objSEVolumePanel.changeState(true);
+			
+			intSEMutedVolume = void;
+		}
+	}
+	
+	function changeWinkEnabled()
+	{
+		// 画面モード切替
+		
+		// 目パチ有効なら無効にする
+		if (blWinkEnabled) {
+			blWinkEnabled = false;
+			sf.userconfig.winkEnabled = false;
+			objWinkOnButton.changeState();
+		}
+		
+		// 無効なら有効にする
+		else {
+			blWinkEnabled = true;
+			sf.userconfig.winkEnabled = true;
+			objWinkOffButton.changeState();
+		}
+		
+		GraphicManager.hsUpdateForWink();
+	}
+	
+	function changeCursorSnap(enable)
+	{
+		// カーソルモード変更
+		
+		blSetCursor = enable;
+		SystemManager.fcSetCursorAutoFocusState(enable);
+		
+		if (enable == true) {	// スナップ有効
+			objCursorSnapDisableButton.changeState();
+		}
+		else {	// スナップ無効
+			objCursorSnapEnableButton.changeState();
+		}
+	}
+	
+	function changeCharSpeed(speed)
+	{
+		// 文字表示速度変更
+		
+		window.userChSpeed = speed;
+		window.setUserSpeed();
+		intCharSpeed = speed;
+		window.saveSystemVariables();
+		
+		objCharSpeedFastButton.initState() if (speed != window.chSpeeds.fast);
+		objCharSpeedNormalButton.initState() if (speed != window.chSpeeds.normal);
+		objCharSpeedSlowButton.initState() if (speed != window.chSpeeds.slow);
+		objCharSpeedNowaitButton.initState() if (speed > 0);
+		
+		objCharSpeedTestLayer.speedTest(speed);
+	}
+	
+	function onSelectedItemClick(sender)
+	{
+		// ボタンが押されたとき
+		switch(sender)
+		{
+			case objCloseButton: // 「閉じる」ボタン
+				sndfunc.seCancel();
+				hide();
+				break;
+			
+			case objBGMMuteButton:	// BGMミュートボタン
+				sndfunc.seDeside();
+				changeBGMMutedState();
+				break;
+			
+			case objSEMuteButton:	// SEミュートボタン
+				sndfunc.seDeside();
+				changeSEMutedState();
+				break;
+			
+			//------------------------------------------------------------------
+			// 文字表示速度セクション
+			
+			case objCharSpeedFastButton:	// 「速い」ボタン
+			case objCharSpeedNormalButton:	// 「普通」ボタン
+			case objCharSpeedSlowButton:	// 「遅い」ボタン
+			case objCharSpeedNowaitButton:	// 「ノーウェイト」ボタン
+				sndfunc.seDeside();
+				changeCharSpeed(sender.intOptionValue);
+				objSectionSelectorArray[2].objCurrentChild = sender;
+				break;
+			
+			//------------------------------------------------------------------
+			
+			case objCursorSnapEnableButton:	// スナップ有効ボタン
+			case objCursorSnapDisableButton:	// スナップ無効ボタン
+				sndfunc.seDeside();
+				changeCursorSnap(sender.intOptionValue);
+				objSectionSelectorArray[3].objCurrentChild = sender;
+				break;
+			
+			//------------------------------------------------------------------
+			
+			case objWinkOnButton:	// フルスクリーンボタン
+			case objWinkOffButton:	// ウィンドウボタン
+				sndfunc.seDeside();
+				changeWinkEnabled(sender.intOptionValue);
+				objSectionSelectorArray[4].objCurrentChild = sender;
+				break;
+		}
+		
+		saveUserConfig();
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function onEscapeKeyDown()
+	{
+		// エスケープキーが押されたとき
+		
+		// セクションセレクタからは閉じる
+		if (!intCursorLevel) {
+			onSelectedItemClick(objCloseButton);
+		}
+		
+		// セクションの中にいるときはセクションセレクタに戻る
+		else {
+			intCursorLevel = 0;
+			objCurrentSectionSelector.getCursorFromManager();
+		}
+	}
+}

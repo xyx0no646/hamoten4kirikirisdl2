@@ -1,0 +1,127 @@
+/******************************************************************************
+	鱧天初期化ファイル
+*******************************************************************************/
+
+kag.fore.base.cursor = crAppStart;
+
+// オートパスに追加するのはKAG関連ファイルのみ
+Storages.addAutoPath("scenario/KagPlugins/");
+Storages.addAutoPath("scenario/KagRoutines/");
+Storages.addAutoPath("scenario/tjs/");
+
+// 設定用の辞書を用意する
+var MBSystemPref = %[debugMode : false];
+var MBGraphicPref = %[];
+var MBContPref = %[];
+
+// システムの設定ファイルを読み込む
+Scripts.execStorage("_preferences/system.tjs");
+
+/*
+	リッチファイルは別パスにして、アクセスは必ず関数経由にすること
+*/
+
+// 追加の準備
+var MBFilePath = %[];
+
+// 追加関数（開発用）
+
+function addPathToMBPath(name, path)
+{
+	// Native版 XP3
+    if (Storages.isExistentStorage(System.exePath+"data.xp3")) {
+        path = "%s%s".sprintf(System.exePath+"data.xp3>", path);
+    }
+	// Native版 dataフォルダ
+    else if (Storages.isExistentStorage(System.exePath+"data/startup.tjs")) {
+        path = "%s%s".sprintf(System.exePath+"data/", path);
+    }
+	// Emscripten dataフォルダ
+    else {
+        path = "%s%s".sprintf(System.exePath+"", path);
+	}
+	dm("`%s'を検索中⭐...".sprintf(path));
+	MBFilePath[name] = "%s/".sprintf(path);
+}
+
+// 追加関数（パッケージ用）
+if (!MBSystemPref.debugMode) {
+	addPathToMBPath = function(name, path)
+	{
+		// 追加関数（すぐ後で破棄）		
+		path = "%s%s.xp3".sprintf(System.exePath, path);
+
+		dm("`%s'を検索中...".sprintf(path));
+		if (Storages.isExistentStorage(path)) {
+			MBFilePath[name] = "%s>".sprintf(path);
+		}
+		else {
+			throw new Exception("ゲームフォルダが壊れています。\nインストールをやりなおしてみてください。");
+		}
+	};
+}
+
+
+// 背景画像, 部品画像, 立ち絵
+addPathToMBPath('images', 'graph');
+
+// イベント画像
+addPathToMBPath('events', 'pict');
+
+// 音声
+addPathToMBPath('sounds', 'audio');
+
+// 動画
+addPathToMBPath('movies', 'movie');
+
+delete addPathToMBPath;
+
+
+// 標準オートパスを書き換え
+Storages.addAutoPath("%simage/".sprintf(MBFilePath.images));
+Storages.addAutoPath("%sbgimage/".sprintf(MBFilePath.images));
+Storages.addAutoPath("%sfgimage/".sprintf(MBFilePath.images));
+Storages.removeAutoPath('image/');
+Storages.removeAutoPath('bgimage/');
+Storages.removeAutoPath('fgimage/');
+
+Storages.addAutoPath("%simage/".sprintf(MBFilePath.eximages));
+
+Storages.addAutoPath("%sbgm/".sprintf(MBFilePath.sounds));
+Storages.addAutoPath("%ssound/".sprintf(MBFilePath.sounds));
+Storages.addAutoPath("%ssound/".sprintf(MBFilePath.exsounds));
+Storages.removeAutoPath('bgm/');
+Storages.removeAutoPath('sound/');
+
+Storages.addAutoPath("%smovie/".sprintf(MBFilePath.movies));
+Storages.removeAutoPath("video/");
+
+
+// デフォルトの画像ストックフォルダを指定
+Storages.addAutoPath("%simage/rclick/".sprintf(MBFilePath.images));
+Storages.addAutoPath("%simage/dive/".sprintf(MBFilePath.images));
+Storages.addAutoPath("%srule/".sprintf(MBFilePath.images));
+
+
+// メニューの名前を変える
+kag.goToStartMenuItem.caption = "リセット(&R)";
+kag.displayMenu.caption = "スクリーン(&V)";
+kag.helpAboutMenuItem.caption = "このゲームについて(&A)";
+
+// 環境変数を初期化する
+Scripts.execStorage("system_mb/init/setMBEnvs.tjs");
+
+// システム関連関数だけ先読みしておく
+Scripts.execStorage("system_mb/functions/sysFunctions.tjs");
+
+
+if (kag.fullScreened) {
+	sf.userconfig.isFullScreen = true;
+}
+else {
+	sf.userconfig.isFullScreen = false;
+	kag.visible = true;
+}
+
+// ゲーム名を拾っておく
+MBSystemPref.title = System.title;

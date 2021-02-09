@@ -1,0 +1,296 @@
+/******************************************************************************
+	system_mb/mb/system/MBHistoryLayer.tjs
+*******************************************************************************/
+
+
+class MBHistoryLayer extends HistoryLayer
+{
+	var fontHeight = 24;
+	var lineHeight = 50;
+	
+	var marginL = 150;
+	var marginR = 170;
+	var marginT = 57;
+	var marginB = 50;
+	
+	var historyColor = MBGraphicPref.HistoryTextColor;
+	
+	var isNewLayer = false;
+	
+	// 管理オブジェクト
+	var upButton;	// 上にスクロール
+	var downButton;	// 下にスクロール
+	var objScrollPane;	// スクロールバー的なもの
+	
+	
+	function MBHistoryLayer(win, par)
+	{
+		// コンストラクタ
+		
+		super.HistoryLayer(win, par);
+		
+		absolute = 2000000;
+		
+		fontHeight = 24;
+		lineHeight = 36;
+		font.bold = false;
+	}
+	
+	function finalize()
+	{
+		// ファイナライザ
+		
+		invalidate upButton      if (upButton !== void);
+		invalidate downButton    if (downButton !== void);
+		invalidate objScrollPane if (objScrollPane !== void);
+		
+		super.finalize(...);
+	}
+	
+	
+	function hide()
+	{
+		window.trigger('end_contextmenu');
+		window.hideHistory();
+	}
+	
+	//==========================================================================
+	
+	function makeButtons()
+	{
+		if(closeButton !== void) return; // すでに作成されている
+
+		closeButton = new LButtonLayer(window, this);
+		closeButton.setImageSize(__RTB_WIDTH, __RTB_HEIGHT);
+		closeButton.setSizeToImageSize();
+		closeButton.loadImages(sysfunc.getPathImage('bt_return' + MBGraphicPref.HistoryReturnButtonSuffix));
+		closeButton.left      = MBGraphicPref.HistoryReturnButtonPositionX;
+		closeButton.top       = MBGraphicPref.HistoryReturnButtonPositionY;
+		closeButton.visible   = true;
+		closeButton.hint      = "メッセージ履歴を閉じる";
+		
+		objScrollPane = new MBHistoryScrollPane(window, this);
+		objScrollPane.setPos(708, 59);
+		
+		upButton   = new MBButton(window, this);
+		upButton.blMouseHoldable = true;
+		upButton.setImageSize(28, 27);
+		upButton.setSizeToImageSize();
+		upButton.loadImages(sysfunc.getPathImage('history/bt_up'));
+		upButton.setPos(715, 32);
+		upButton.visible = true;
+		
+		downButton = new MBButton(window, this);
+		downButton.blMouseHoldable = true;
+		downButton.setImageSize(28, 27);
+		downButton.setSizeToImageSize();
+		downButton.loadImages(sysfunc.getPathImage('history/bt_down'));
+		downButton.setPos(715, 541);	// topは342くらい下
+		downButton.visible = true;
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function updateButtonState(init)
+	{
+		// スライドつまみの位置を調整したりとかする
+		
+		if (init) {
+			objScrollPane.initPegPosition(dispStart);
+		}
+		else {
+			objScrollPane.setPegPositionByLine(dispStart);
+		}
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function clearBack(n)
+	{
+		// 背景を塗りつぶす
+		loadImages(sysfunc.getPathImage('history/background'));
+	}
+	
+	
+	//==========================================================================
+	
+	function beginIndent()
+	{
+		// 現在位置にインデントを設定	override
+		// インデントせずに改行
+		
+		reline();
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function endIndent()
+	{
+		// インデントを解除
+		;	// do nothing
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function dispInit()
+	{
+		// 全部再描画と初期設定
+		
+		// とりあえずオートモードとかスキップとか全部とめる
+		window.cancelSkip();
+		window.cancelAutoMode();
+		
+		makeButtons(); // ボタンを作成
+
+		lastLine = currentLine;
+		endAction();
+		lastAction = currentAction;
+
+		antialiased = window.chDefaultAntialiased;
+		clearBack();
+
+		if(everypage)
+		{
+			if(dataPages>0)
+			{
+				canScroll	= true;
+				dispStart	= dataPages - 1;
+			}
+			else
+			{
+				canScroll	= false;
+				dispStart	= 0;
+			}
+			drawPage();
+		}
+		else
+		{
+			if(verticalView)
+				dispLines = (width - marginR - marginL) \ lineHeight;
+			else
+				dispLines = (height - marginT - marginB - controlHeight) \ lineHeight;
+
+			if(dataLines <= dispLines)
+			{
+				// 表示可能範囲内に収まる
+				canScroll = false;
+				dispStart = 0;
+				var i;
+				for(i= 0; i < dataLines; i++)
+					drawLine(i);
+			}
+			else
+			{
+				// 表示可能範囲内に収まらない
+				canScroll = true;
+				dispStart = dataLines - dispLines;
+				var i;
+				for(i = 0; i < dispLines; i++)
+					drawLine(i);
+			}
+		}
+
+		updateButtonState(true);
+		visible = true;
+		setMode();
+		focus();
+		lastWheelTick = 0;
+
+		cursor = window.cursorDefault;
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function scrollUp()
+	{
+		if(dispStart < dataLines - dispLines)
+		{
+			clearActionHighlights();
+			if(verticalView)
+				copyRect(width - marginR - lineHeight *(dispLines - 1), controlHeight, this,
+					width - marginR - lineHeight *(dispLines), controlHeight,
+						lineHeight * (dispLines-1), height - controlHeight);
+			else
+				copyRect(0, controlHeight + marginT, this,
+					0, controlHeight + lineHeight + marginT, width, lineHeight*(dispLines-1));
+			clearBack(dispLines - 1);
+			dispStart++;
+			
+			var i;
+			for (i=0; i<dispLines; i++) {
+				drawLine(i);
+			}
+			updateButtonState();
+		}
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function scrollDown()
+	{
+		if(dispStart!=0)
+		{
+			clearActionHighlights();
+			if(verticalView)
+				copyRect(width - marginR - lineHeight *(dispLines), controlHeight, this,
+					width - marginR - lineHeight *(dispLines-1),
+					controlHeight, lineHeight * (dispLines-1), height - controlHeight);
+			else
+				copyRect(0, controlHeight + lineHeight + marginT, this,
+					0, controlHeight + marginT, width, lineHeight*(dispLines-1));
+			clearBack(0);
+			dispStart--;
+			
+			var i;
+			for (i=0; i<dispLines; i++) {
+				drawLine(i);
+			}
+			
+			updateButtonState();
+		}
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function updatePageBySlidePane(updtestate)
+	{
+		// スライドペーンからページを描画
+		
+		clearBack();
+		
+		var i;
+		for(i = 0 ; i < dispLines; i++) {
+			drawLine(i);
+		}
+		
+		if (updtestate) {
+			updateButtonState();
+		}
+	}
+	
+	
+	//==========================================================================
+	
+	function onSelectedItemClick(sender)
+	{
+		// 選択されたアイテムがクリックされたとき（追加分）
+		
+		switch (sender) {
+			case upButton:
+				onKeyDown(VK_UP);
+				break;
+			
+			case downButton:
+				onKeyDown(VK_DOWN);
+				break;
+			
+			default:
+				break;
+		}
+	}
+	
+	function onRightClickedOnChild()
+	{
+		hide();
+	}
+}

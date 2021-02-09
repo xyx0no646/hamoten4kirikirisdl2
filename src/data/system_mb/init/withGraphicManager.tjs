@@ -1,0 +1,204 @@
+/******************************************************************************
+	functions/init/customize_grpman.tjs
+
+	グローバルオブジェクトの生成とか独自タグの生成とか。
+	グラフィックマネージャ系。
+*******************************************************************************/
+
+//==============================================================================
+// 画像系オブジェクト
+
+var GraphicManager = MBSystem.objGraphicManager;
+
+
+//==============================================================================
+// 各種設定
+
+// 立ち絵レイヤの絶対位置を設定
+GraphicManager.objHumanSystemHash.left.setAbsolute(MBLayerAbs.chlLeft);
+GraphicManager.objHumanSystemHash.right.setAbsolute(MBLayerAbs.chlRight);
+GraphicManager.objHumanSystemHash.center.setAbsolute(MBLayerAbs.chlCenter);
+GraphicManager.objHumanSystemHash.lead.setAbsolute(MBLayerAbs.chlLead);
+
+// 立ち絵レイヤの表示位置を設定
+GraphicManager.objHumanSystemHash.left.setPosition(
+	MBGraphicPref.chOnLeftX, MBGraphicPref.chOnLeftY);
+
+GraphicManager.objHumanSystemHash.center.setPosition(
+	MBGraphicPref.chOnCenterX, MBGraphicPref.chOnCenterY);
+
+GraphicManager.objHumanSystemHash.right.setPosition(
+	MBGraphicPref.chOnRightX, MBGraphicPref.chOnRightY);
+
+GraphicManager.objHumanSystemHash.lead.setPosition(
+	MBGraphicPref.leadStdX, MBGraphicPref.leadStdY);
+
+//------------------------------------------------------------------------------
+// 独自拡張タグ
+
+/*
+	[bcimage] - 暗幕オブジェクトに画像を読み込む
+		storage : 暗転画像
+		page : 読み込み対象ページ（fore|back）
+*/
+TAG.bcimage = function(elm)
+{
+	GraphicManager.bcLoadImages(elm);
+	
+	return 0;
+} incontextof kag;
+
+/*
+	[bcsweep] - 不要な暗幕の除去
+*/
+TAG.bcsweep = function(elm)
+{
+	GraphicManager.bcPutAway();
+	
+	return 0;
+} incontextof kag;
+
+
+//==============================================================================
+// MBHumanSystem関連
+
+
+//------------------------------------------------------------------------------
+// 独自拡張タグ
+
+/*
+	[hsimage - 立ち絵レイヤのトランジション準備というか画像読み込み
+	
+	on : 対象オブジェクト。left / center / right / leadのいずれか。
+	who : 立ち絵の基礎ディレクトリ名
+	body : 立ち絵本体画像名
+	face : 表情画像名
+	glass : ゴーグル等のレンズ画像名
+	ware : 装飾品画像名
+	exp1 : 表情追加画像名
+	exp2 : 表情追加画像名2
+*/
+TAG.hsimage = function(elm)
+{
+	var p = elm.who;
+	if (p != "") {
+		grputil.CheckCharacterIdRegisterd(p);
+	}
+	
+	GraphicManager.hsPrepareImages(elm);
+	
+	return 0;
+} incontextof kag;
+
+
+/*
+	[hsclear] - 立ち絵のクリア
+	
+	on : 対象オブジェクト
+*/
+TAG.hsclear = function(elm)
+{
+	GraphicManager.hsClearImages(elm);
+	
+	return 0;
+} incontextof kag;
+
+/*
+	[hsoption] - 立ち絵の設定変更
+	
+	on : 対象オブジェクト
+	width : 横幅
+	height : 縦幅
+	left : 左位置
+	top : 上位置
+	visible : 可視
+	opacity : 不透明度
+	index   : レイヤ深度
+*/
+
+TAG.hsoption = function(elm)
+{
+	GraphicManager.hsChangeProperties(elm);
+	
+	return 0;
+} incontextof kag;
+
+//------------------------------------------------------------------------------
+// hsscale
+// 立ち絵のスケールを変える
+
+TAG.hsscale = function(elm)
+{
+	GraphicManager.hsChangeScale(elm);
+	
+	return 0;
+} incontextof kag;
+
+//------------------------------------------------------------------------------
+// hsmove - 立ち絵のムーヴ
+// 
+// 基本的に標準のmoveタグと同じように使うが、wmはcanskip:falseにしたほうが無難
+
+TAG.hsmove = function(elm)
+{
+	var obj = GraphicManager.objHumanSystemHash[elm.on].fore[0];
+	
+	obj.beginMove(%[
+		path  : elm.path,
+		time  : elm.time,
+		accel : elm.accel
+	]);
+	
+	return 0;
+} incontextof kag;
+
+
+//==============================================================================
+// ロードマット関連
+
+TAG.loadmat = function(elm)
+{
+	if (elm.visible) {
+		GraphicManager.showLoadingCartain();
+	}
+	else {
+		GraphicManager.hideLoadingCartain();
+	}
+	
+	return 0;
+} incontextof kag;
+
+
+//==============================================================================
+// シネマット関連
+
+/*
+	[cinemat] - シネマットの設定
+		op : clearのとき消去する。それ以外は入れない。
+		layer : foreまたはback
+		left : 空白開始左位置
+		top : 空白開始上位置
+		width : 空白横幅
+		height : 空白縦幅
+*/
+
+TAG.cinemat = function (elm)
+{
+	if (elm.op == 'clear') {
+		GraphicManager.objCinemat.clearCinemat(elm);
+	}
+	else {
+		GraphicManager.objCinemat.setCinemat(elm);
+	}
+	
+	return 0;
+} incontextof kag;
+
+TAG.setcinematcolor = function(elm)
+{
+	if (elm.color != "") {
+		GraphicManager.objCinemat.strMaskColor = elm.color;
+	}
+	
+	return 0;
+} incontextof kag;

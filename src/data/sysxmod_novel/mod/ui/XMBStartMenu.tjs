@@ -1,0 +1,239 @@
+/******************************************************************************
+	system_xmb/xmb/ui/XMBStartMenu.tjs
+*******************************************************************************/
+
+
+class XMBStartMenu extends MBComponentLayer
+{
+	var isNewLayer = true;
+	
+	var objContinueButton;
+	var objStartButton;
+	var objLoadButton;
+	var objExtraButton;
+	var objConfigButton;
+	var objWorkingSpace;
+	
+	var refFocusMember;
+	var enabled = true;
+	
+	
+	function XMBStartMenu(win, par)
+	{
+		// コンストラクタ
+		
+		super.MBComponentLayer(win, par);
+		
+		setSize(800, 600);
+		setPos(0, 0);
+		
+		init();
+	}
+	
+	function finalize()
+	{
+		// ファイナライザ
+		
+		SystemManager.fcRemoveStackMember(refFocusMember);
+		
+		invalidate objWorkingSpace if (objWorkingSpace !== void);
+		
+		invalidate objContinueButton if (objContinueButton !== void);
+		invalidate objStartButton    if (objStartButton !== void);
+		invalidate objLoadButton     if (objLoadButton !== void);
+		invalidate objExtraButton    if (objExtraButton !== void);
+		invalidate objConfigButton   if (objConfigButton !== void);
+		
+		super.finalize(...);
+	}
+	
+	function init()
+	{
+		// 初期化
+		
+		parent   = window.fore.base;
+		absolute = MBLayerAbs.startmenu;
+		
+		if (objStartButton === void) {
+			objStartButton = new MBButton(window, this);
+			objStartButton.loadImages(sysfunc.getPathImage('title/bt_start'));
+			objStartButton.setPos(MBGraphicPref.tStartButtonPositionX, MBGraphicPref.tStartButtonPositionY);
+			
+			objLoadButton = new MBButton(window, this);
+			objLoadButton.loadImages(sysfunc.getPathImage('title/bt_load'));
+			objLoadButton.setPos(MBGraphicPref.tLoadButtonPositionX, MBGraphicPref.tLoadButtonPositionY);
+			
+			objExtraButton = new MBButton(window, this);
+			objExtraButton.loadImages(sysfunc.getPathImage('title/bt_extra'));
+			objExtraButton.setPos(MBGraphicPref.tExtraButtonPositionX, MBGraphicPref.tExtraButtonPositionY);
+			
+			objConfigButton = new MBButton(window, this);
+			objConfigButton.loadImages(sysfunc.getPathImage('title/bt_config'));
+			objConfigButton.setPos(MBGraphicPref.tConfigButtonPositionX, MBGraphicPref.tConfigButtonPositionY);
+			
+			objContinueButton = new MBAnimationButton(window, this);
+			objContinueButton.loadImages(sysfunc.getPathImage('title/bt_continue_base'));
+			objContinueButton.loadButtonImages(
+				sysfunc.getPathImage('title/bt_continue'),
+				sysfunc.getPathImage('title/bt_continue_on')
+			);
+			objContinueButton.setPos(MBGraphicPref.tContinueButtonPositionX, MBGraphicPref.tContinueButtonPositionY);
+		}
+		
+		objStartButton.visible    = true;
+		objLoadButton.visible     = true;
+		objExtraButton.visible    = true;
+		objConfigButton.visible   = true;
+		
+		// 再開用データがあるときー
+		if (Storages.isExistentStorage("%s/data%d.bmp".sprintf(
+			window.saveDataLocation, MBSystemPref.quickSaveBookMark)
+		)) {
+			objContinueButton.visible = true;
+		}
+		
+		// ないときー
+		else {
+			objContinueButton.visible = false;
+		}
+		
+		// フォーカススタックを設定
+		setFocusStack();
+		
+		visible = true;
+	}
+	
+	function hide()
+	{
+		// 隠す
+		
+		visible = false;
+	}
+	
+	function setFocusStack()
+	{
+		// フォーカススタックを設定
+		// KAGっぽく上は左に、下は右と同じにする
+		// ので、探すのは右と左のみにする
+		
+		var cont  = [objStartButton,    objConfigButton];
+		var start = [objLoadButton,     objContinueButton];
+		var load  = [objExtraButton,    objStartButton];
+		var extra = [objConfigButton  , objLoadButton];
+		var conf  = [objContinueButton, objExtraButton];
+		
+		var fctarget = objContinueButton;
+		
+		if (objContinueButton.visible) {
+			objContinueButton.setCursorMap(cont[1], cont[0], cont[0], cont[1]);
+		}
+		else {
+			start[1] = objConfigButton;
+			conf[0]  = objStartButton;
+			
+			fctarget = objStartButton;
+			
+			// ロードボタンにする？
+			var i;
+			for (i=0; i<window.numBookMarks; i++) {
+				if (Storages.isExistentStorage("%s/data%d.bmp".sprintf(
+					window.saveDataLocation, i)
+				)) {
+					fctarget = objLoadButton;
+					break;
+				}
+			}
+		}
+		
+		objStartButton.setCursorMap(start[1], start[0], start[0], start[1]);
+		objLoadButton.setCursorMap(load[1], load[0], load[0], load[1]);
+		objExtraButton.setCursorMap(extra[1], extra[0], extra[0], extra[1]);
+		objConfigButton.setCursorMap(conf[1], conf[0], conf[0], conf[1]);
+		
+		refFocusMember = SystemManager.fcPushFocusStack(fctarget);
+		SystemManager.fcApplyFocusTargetSearch();
+	}
+	
+	//==========================================================================
+	
+	function onSelectedItemClick(sender)
+	{
+		if (!enabled) {
+			return;
+		}
+		
+		enabled = false;
+		
+		var fname = 'title.ks';
+		var target;
+		
+		switch (sender)
+		{
+			case objStartButton:
+				if (MBGraphicPref.tUseStartButtonSound) {
+					sndfunc.sePlayStart();
+				}
+				else {
+					sndfunc.seDecide();
+				}
+				target = '*start';
+				break;
+			
+			case objLoadButton:
+				sndfunc.seDecide();
+				target = '*loading';
+				break;
+			
+			case objExtraButton:
+				sndfunc.seDecide();
+				target = '*extra';
+				break;
+			
+			case objContinueButton:
+				sndfunc.seDecide();
+				target = '*continue';
+				break;
+			
+			case objConfigButton:
+				sndfunc.seDeside();
+				makePreferenceMenu();
+				return;
+				break;
+			
+			default:
+				return;
+		}
+		
+		kag.process(fname, target);
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function onEscapeKeyDown(key, shift)
+	{
+		// コンテクストメニューを呼ぶ
+		
+		window.callExtraConductor('commonfunc.ks', '*rclick_wrapper');
+	}
+	
+	
+	//==========================================================================
+	
+	function makePreferenceMenu()
+	{
+		// 設定画面を作る
+		
+		invalidate objWorkingSpace if (objWorkingSpace !== void);
+		objWorkingSpace = new MBControllPanel(window, parent, this);
+		objWorkingSpace.setControllPanel();
+		objWorkingSpace.show();
+	}
+	
+	function onControllPanelHasGone()
+	{
+		invalidate objWorkingSpace if (objWorkingSpace !== void);
+		enabled = true;
+		SystemManager.acDisactivateCanceller();
+		SystemManager.fcApplyFocusTargetSearch();
+	}
+}

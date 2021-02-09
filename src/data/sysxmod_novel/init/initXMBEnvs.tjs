@@ -1,0 +1,43 @@
+/******************************************************************************
+	initXMBEnvs.tjs
+*******************************************************************************/
+
+
+//==============================================================================
+// 一度だけ行う処理
+
+//------------------------------------------------------------------------------
+// コンテクストメニューの対応を定義（これはMBContextMenuが参照する）
+var __CMENU_MAP = %[
+	normal    : MBNormalContextMenu,
+	cgview    : MBCGViewerContextMenu,
+	endlist   : MBEndListContextMenu,
+	endscene  : MBEndingContextMenu
+];
+
+
+//------------------------------------------------------------------------------
+// レイヤ順序の追加設定
+
+MBLayerAbs.startmenu    = kag.fore.messages[0].absolute + 10;
+MBLayerAbs.charcut      = 1101000;
+MBLayerAbs.quicksave    = 1700500;
+MBLayerAbs.cgviewer     = 1700550;
+MBLayerAbs.sysclickwait = 1700700;
+
+
+//==============================================================================
+// 変数の初期化は必ずこの関数内で行うこと
+
+function init_xmbenv()
+{
+	if (f.wsb !== void && isvalid(f.wsb)) {
+		; // do nothing
+	}
+	else {
+		f.wsb = new WaveSoundBuffer(kag);
+	}
+
+}
+
+

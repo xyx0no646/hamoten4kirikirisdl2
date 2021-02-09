@@ -1,0 +1,90 @@
+/******************************************************************************
+	system_mb/mb/system/userpref/MBCharSpeedTestLayer.tjs
+*******************************************************************************/
+
+//==============================================================================
+// 文字表示速度テストレイヤー
+
+class MBContextMenuCharSpeedTestLayer extends Layer
+{
+	var textcolor = 0x9fe1ff;	// 文字色
+	var testtext;	// テスト文字列
+	var timer;	// タイメル
+	var counter;	// カウンテル
+	
+	function MBContextMenuCharSpeedTestLayer(win, par)
+	{
+		super.Layer(win, par);
+		
+		setImageSize(575, 66);
+		setSizeToImageSize();
+		initWindow();
+		name = '文字表示速度テスタ';
+	}
+	
+	function finalize()
+	{
+		invalidate timer if timer !== void;
+		super.finalize(...);
+	}
+	
+	function initWindow()
+	{
+		fillRect(0, 0, 575, 66, 0x88000000);
+		font.height = 14;
+		font.bold = true;
+		drawText(10, 10, "[Speed Test]", textcolor);
+		counter = 0;
+	}
+	
+	function speedTest(speed)
+	{
+		// スピードテスト開始
+		
+		SystemManager.acActivateCanceller();
+		
+		initWindow();
+		do {
+			testtext = getStringRandom();
+		} while (testtext == "");
+		
+		font.height = 16;
+		font.bold = false;
+		
+		if (speed > 0) {
+			timer = new Timer(onTimer, '');
+			timer.interval = speed;
+			timer.enabled = true;
+		}
+		else {
+			drawText(10, 35, testtext, textcolor);
+			SystemManager.acDisactivateCanceller();
+		}
+	}
+	
+	function onTimer()
+	{
+		drawText(10 + font.getTextWidth(testtext.substring(0, counter)),
+			35,
+			testtext.charAt(counter),
+			textcolor
+		);
+		
+		if (++counter == testtext.length) {
+			timer.enabled = false;
+			invalidate timer if (timer !== void);
+			counter = 0;
+			SystemManager.acDisactivateCanceller();
+		}
+	}
+	
+	function getStringRandom()
+	{
+		// テスト文をランダムに決定
+		var rand = new Math.RandomGenerator();
+		var str = "文字表示速度のテストです。";
+		
+		return str;
+	}
+}
+

@@ -1,0 +1,32 @@
+// startup.tjs - スタートアップスクリプト
+// Copyright (C) 2001, W.Dee  改変・配布は自由です
+
+// systemフォルダへのPathは最初に登録しておく
+var dataPath = '/data/';
+Storages.addAutoPath(System.exePath + dataPath);
+Storages.addAutoPath(System.exePath + dataPath + "/system/");
+
+// 吉里吉里Z用Stub
+property _dummyProp { getter {} setter (v) {} }
+with(Window) {
+    &.innerSunken    = &_dummyProp;
+    &.showScrollBars = &_dummyProp;
+}
+
+Plugins.link("plugin/menu.dll");       // メニューを使わないなら不要
+Plugins.link("plugin/KAGParser.dll");  // KAGを使わない(!)なら不要
+
+// 吉里吉里SDL2用Stub
+// MenuItemのスタブ定義
+if (typeof(global.MenuItem) !== "Object")
+{
+	Scripts.execStorage("MenuItem_stub.tjs");
+}
+// デフォルトフォント定義
+if (typeof(global.Font) === "Object" && typeof(global.Font.addFont) === "Object")
+{
+	System.setArgument("-deffont", global.Font.addFont("ipag.ttf")[0]);
+}
+
+// このスクリプトは一番最初に実行されるスクリプトです
+Scripts.execStorage("system/Initialize.tjs"); // system/Initialize.tjs を実行

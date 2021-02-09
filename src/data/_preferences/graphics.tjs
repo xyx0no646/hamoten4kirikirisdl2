@@ -1,0 +1,197 @@
+//==============================================================================
+//
+// _preferences/graphics.tjs
+// MercuryBlueの画像関連設定ファイル
+//
+// それぞれの項目に付いた説明を参照して適宜変更してください。
+//
+//==============================================================================
+
+
+//------------------------------------------------------------------------------
+// タイトルメニューの表示設定
+
+// ◆ スタートボタンの表示位置
+MBGraphicPref.tStartButtonPositionX =  40;
+MBGraphicPref.tStartButtonPositionY = 560;
+
+// ◆ ロードボタンの表示位置
+MBGraphicPref.tLoadButtonPositionX = 144;
+MBGraphicPref.tLoadButtonPositionY = 560;
+
+// ◆ エクストラボタンの表示位置
+MBGraphicPref.tExtraButtonPositionX = 245;
+MBGraphicPref.tExtraButtonPositionY = 560;
+
+// ◆ コンフィグボタンの表示位置
+MBGraphicPref.tConfigButtonPositionX = 358;
+MBGraphicPref.tConfigButtonPositionY = 560;
+
+// ◆ クイックロードボタンの表示位置
+MBGraphicPref.tContinueButtonPositionX = 695;
+MBGraphicPref.tContinueButtonPositionY = 552;
+
+// ◆ スタートボタンを押したときに特別な効果音を鳴らすかどうか
+// trueが指定されると/audio/sound/menu_start.wavが使用されます。
+MBGraphicPref.tUseStartButtonSound = true;
+
+// タイトルメニューの表示設定ここまで
+//------------------------------------------------------------------------------
+
+
+//------------------------------------------------------------------------------
+//ゲーム内ウィンドウ関連設定（右クリック、ダイアログ等）
+
+// ◆ ウィンドウ背景色
+MBColors.window.background = 0xcc000000;
+
+// ◆ 枠線色
+MBColors.window.border = 0xffc6c6c6;
+
+// ◆ ウィンドウタイトル文字色
+MBColors.font.label.title  = 0x474a35;
+
+// ◆ ウィンドウ本文文字色
+MBColors.font.label.normal = 0xffffff;
+
+// ゲーム内ウィンドウ関連ここまで
+//------------------------------------------------------------------------------
+
+
+//------------------------------------------------------------------------------
+// キャラクター立ち絵関連設定
+
+// ◆ 立ち絵（左）の表示座標
+MBGraphicPref.chOnLeftX = -130;
+MBGraphicPref.chOnLeftY =    0;
+
+// ◆ 立ち絵（中央）の表示座標
+MBGraphicPref.chOnCenterX = 50;
+MBGraphicPref.chOnCenterY =  0;
+
+// ◆ 立ち絵（右）の表示座標
+MBGraphicPref.chOnRightX = 220;
+MBGraphicPref.chOnRightY =   0;
+
+// ◆ 立ち絵（主人公）の表示座標
+MBGraphicPref.leadStdX = 340;
+MBGraphicPref.leadStdY = 120;
+
+// キャラクター立ち絵関連ここまで
+//------------------------------------------------------------------------------
+
+
+//------------------------------------------------------------------------------
+// CG鑑賞モードの表示設定
+
+// ◆ 使用する「戻る」ボタンの接尾辞
+MBGraphicPref.CgvReturnButtonSuffix = "_dark";
+
+// ◆ 「戻る」ボタンの表示座標
+MBGraphicPref.CgvReturnButtonPositionX = 20;
+MBGraphicPref.CgvReturnButtonPositionY = 533;
+
+// ◆ 「次のページ」ボタンの表示座標
+MBGraphicPref.CgvNextButtonPositionX = 744;
+MBGraphicPref.CgvNextButtonPositionY = 494;
+
+// ◆ 「前のページ」ボタンの表示座標
+MBGraphicPref.CgvPrevButtonPositionX = 688;
+MBGraphicPref.CgvPrevButtonPositionY = 494;
+
+// ◆ サムネイルの羅列開始位置
+MBGraphicPref.CgvFrameStartPositionX = 90;
+MBGraphicPref.CgvFrameStartPositionY = 80;
+
+// ◆ サムネイルの横幅
+MBGraphicPref.CgvFrameWidth = 120;
+
+// ◆ サムネイルの縦幅
+MBGraphicPref.CgvFrameHeight = 90;
+
+// ◆ サムネイル間のマージン
+MBGraphicPref.CgvFrameMargin = 5;
+
+// ◆ サムネイルを横に並べる個数（列数）
+MBGraphicPref.CgvFrameCols = 5;
+
+// ◆ サムネイルを縦に並べる個数（行数）
+MBGraphicPref.CgvFrameRows = 4;
+
+// CG鑑賞モード表示設定ここまで
+//------------------------------------------------------------------------------
+
+
+//------------------------------------------------------------------------------
+// セーブ・ロード画面表示設定
+
+// ◆ 選択項目の文字色
+MBGraphicPref.BookmarkSelectorTextColor = 0xf0f0f0;
+
+// ◆ 使用する「戻る」ボタンの接尾辞
+MBGraphicPref.BookmarkReturnButtonSuffix = "_dark";
+
+// ◆ 「戻る」ボタンの表示位置
+MBGraphicPref.BookmarkReturnButtonPositionX = 695;
+MBGraphicPref.BookmarkReturnButtonPositionY = 553;
+
+
+// セーブ・ロード画面表示設定ここまで
+//------------------------------------------------------------------------------
+
+
+//------------------------------------------------------------------------------
+// コンフィグ画面の表示設定
+
+// ◆ 使用する「戻る」ボタンの接尾辞
+MBGraphicPref.ConfigReturnButtonSuffix = "_dark";
+
+// ◆ 「戻る」ボタンの表示位置
+MBGraphicPref.ConfigReturnButtonPositionX = 695;
+MBGraphicPref.ConfigReturnButtonPositionY = 561;
+
+// ◆ 速度テストの文字色
+MBGraphicPref.ConfigTextColor = 0xf0f0f0;
+
+// ◆ 表示速度テストの文字パターン
+// 各行30文字以内で設定してください。
+MBGraphicPref.ConfigNormalTestText = [
+"文字表示速度のテストです。",
+"プレイヤーの好みに近い速度で文字を表示します。",
+"あなたはどのくらいの速度がお好みですか？"
+];
+
+// ◆ 自動読み進め時の行末待ち時間テストの文字パターン
+// 合計30文字以内で設定してください。
+MBGraphicPref.ConfigLineWaitTestText = [
+"lタグやxlマクロによる、",
+"待ち時間はこれくらいです。"
+];
+
+// ◆ 自動読み進め時のページ待ち時間テストの文字パターン
+// 各行30文字以内で設定してください。
+MBGraphicPref.ConfigPageWaitTestText = [
+"自動読み進めのときのページ待ち時間です。",
+"これくらい待つと次に進みます。"
+];
+
+// コンフィグ画面の表示設定ここまで
+//------------------------------------------------------------------------------
+
+
+//------------------------------------------------------------------------------
+// バックログの表示設定
+
+// ◆ 文字色
+MBGraphicPref.HistoryTextColor = 0x000000;
+
+// ◆ 使用する「戻る」ボタンの接尾辞
+MBGraphicPref.HistoryReturnButtonSuffix = "_dark";
+
+// ◆ 「戻る」ボタンの表示位置
+MBGraphicPref.HistoryReturnButtonPositionX = 20;
+MBGraphicPref.HistoryReturnButtonPositionY = 550;
+
+// バックログの表示設定ここまで
+//------------------------------------------------------------------------------
+

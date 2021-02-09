@@ -1,0 +1,86 @@
+/******************************************************************************
+	KAGのメソッドをいろいろhogeる。
+*******************************************************************************/
+
+
+//------------------------------------------------------------------------------
+// processKeysオーバーライド
+// 標準キーバインドを一部無効化
+kag.processKeys = function(key, shift)
+{
+	if(checkProceedingKey(key, shift)) return;
+	
+	if (rightClickEnabled && transCount < 1 && conductor == mainConductor) {
+		if(key == #'F')
+		{
+			// メッセージスキップ
+			if (SceneManager.blMessageSkipEnabled) {
+				onSkipToNextStopMenuItemClick();
+				SystemManager.destroyContextMenu();
+			}
+			return;
+		}
+		
+		if (key == #'P') {
+			if (
+				(SceneManager.blSceneSkipEnabled && SceneManager.getSceneStatus())/* ||
+				(rightClickTarget == '*rclick_recollection')*/
+			) {
+				// シーンスキップ
+				process("", "*scene-end");
+				SystemManager.destroyContextMenu();
+				return;
+			}
+		}
+		
+		if(key == #'A')
+		{
+			// 自動読み進め
+			hideMouseCursor();
+			onAutoModeMenuItemClick();
+			SystemManager.destroyContextMenu();
+			return;
+		}
+	
+		if(key == #'R')
+		{
+			// メッセージ履歴を表示
+			showHistory();
+			SystemManager.destroyContextMenu();
+			return;
+		}
+	}
+	
+	if (key == #'Q') {
+		// 終了
+		close();
+		SystemManager.destroyContextMenu();
+		return;
+	}
+
+	if(key == VK_ESCAPE || key == VK_APPS)
+	{
+		// メッセージを消す
+		if(typeof this.rightClickMenuItem != "undefined" &&
+			rightClickMenuItem.enabled)
+		{
+			rightClickMenuItem.click(); // クリックをエミュレート
+			return;
+		}
+	}
+} incontextof kag;
+
+//------------------------------------------------------------------------------
+// onHelpAboutMenuItemClickオーバーライド
+// 微妙に変更
+
+kag.onHelpAboutMenuItemClick = function(sender)
+{
+	// 「このソフトについて」ウィンドウを表示
+	var win = new global.KAGWindow(false, aboutWidth, aboutHeight);
+	win.caption = MBSystemPref.title + 'について';
+	win.setPos(left + ((width - win.width)>>1), top + ((height - win.height)>>1));
+	win.process('about.ks' ,,, true); // about.ks を immediate で表示
+	win.showModal(); // モード付きで表示
+	invalidate win;
+} incontextof kag;

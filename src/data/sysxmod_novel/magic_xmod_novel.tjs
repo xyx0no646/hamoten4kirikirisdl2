@@ -1,0 +1,122 @@
+/******************************************************************************
+	ノベルシステム用初期化ファイル
+*******************************************************************************/
+
+
+MBLayerAbs.cinemacut = 1200000;
+
+
+//==============================================================================
+// KAGの部分的Hack
+
+dm("");
+dm("KAGシステムのハッキングを開始します...");
+
+function hackKAGSystemWith(fname)
+{
+	if (fname == "") {
+		dm("<MBSystem> 上書きスクリプトファイルが指定されていないため、処理はスキップされました。");
+		tmpChecker = true;
+		return;
+	}
+	
+	if (!Storages.isExistentStorage(fname)) {
+		dm("<MBSystem> 上書きスクリプトファイル `%s' は存在しません。処理はスキップされました。".sprintf(fname));
+		tmpChecker = true;
+		return;
+	}
+	
+	var st = System.getTickCount();
+	Scripts.execStorage(fname);
+	dm("`%s' による上書き処理が完了しました(%s ms)".sprintf(fname, (System.getTickCount() - st)));
+	tmpSeconds += System.getTickCount() - st;
+}
+
+hackKAGSystemWith("sysxmod_novel/init/kaghack/aboutDataStore.tjs");
+hackKAGSystemWith("sysxmod_novel/init/kaghack/aboutUI.tjs");
+
+delete hackKAGSystemWith;
+dm("ハッキング処理に %d msec かかりました。".sprintf(tmpSeconds));
+dm("ハッキング処理を終了しています...");
+
+tmpSecondsAll += tmpSeconds;
+tmpSeconds = 0;
+
+
+//==============================================================================
+// クラスと関数の組込
+
+dm("");
+dm("アプリケーションクラスの組み込みを開始します...");
+
+function createAppSystem(fname)
+{
+	if (fname == "") {
+		dm("<MBSystem> 定義ファイルが指定されていないため、処理はスキップされました。");
+		tmpChecker = true;
+		return;
+	}
+	
+	if (!Storages.isExistentStorage(fname)) {
+		dm("<MBSystem> 定義ファイル `%s' は存在しません。処理はスキップされました。".sprintf(fname));
+		tmpChecker = true;
+		return;
+	}
+	
+	var st = System.getTickCount();
+	Scripts.execStorage(fname);
+	dm("`%s' の組込が完了しました(%s ms)".sprintf(fname, (System.getTickCount() - st)));
+	
+	tmpSeconds += System.getTickCount() - st;
+}
+
+// コンテクストメニュー追加分
+createAppSystem("sysxmod_novel/mod/system/cmenu/MBNormalContextMenu.tjs");
+createAppSystem("sysxmod_novel/mod/system/cmenu/MBCGViewerContextMenu.tjs");
+createAppSystem("sysxmod_novel/mod/system/cmenu/MBEndListContextMenu.tjs");
+createAppSystem("sysxmod_novel/mod/system/cmenu/MBEndingContextMenu.tjs");
+
+// 環境設定
+createAppSystem("sysxmod_novel/mod/system/userconf/MBAudioControllPanel.tjs");
+createAppSystem("sysxmod_novel/mod/system/userconf/MBCharSpeedTestLayer.tjs");
+createAppSystem("sysxmod_novel/mod/system/userconf/MBControllPanel.tjs");
+createAppSystem("sysxmod_novel/mod/system/userconf/MBControllPanelBasicUI.tjs");
+
+// セーブ・ロード
+Plugins.link("sysxmod_novel/_krplugin/ktl_local_files.dll");
+createAppSystem("sysxmod_novel/mod/system/MBBookMarkRestore.tjs");
+createAppSystem("sysxmod_novel/mod/system/MBBookMarkStore.tjs");
+createAppSystem("sysxmod_novel/mod/system/bookmark/MBBookMarkSelectPanel.tjs");
+createAppSystem("sysxmod_novel/mod/system/bookmark/MBSaveSlotButton.tjs");
+
+// CG鑑賞モード
+createAppSystem("sysxmod_novel/mod/system/XMBStoryMapBGLayer.tjs");
+createAppSystem("sysxmod_novel/mod/system/XMBStoryMapFrameButton.tjs");
+createAppSystem("sysxmod_novel/mod/system/XMBCGViewController.tjs");
+
+// UI
+createAppSystem("sysxmod_novel/mod/ui/MBButton2.tjs");
+createAppSystem("sysxmod_novel/mod/ui/XMBStartMenu.tjs");
+
+// 追加関数群
+
+
+if (tmpChecker == true) {
+	throw new Exception ("初期化中にエラーが発生しました。\nインストールをやり直してみてください。");
+}
+
+// 初期化
+createAppSystem("sysxmod_novel/init/initXMBEnvs.tjs");
+createAppSystem("sysxmod_novel/init/hackSystemManager.tjs");
+createAppSystem("sysxmod_novel/init/withXMBCGView.tjs");
+
+delete createAppSystem;
+
+dm("モジュールの構築に %d msec かかりました。".sprintf(tmpSeconds));
+dm("構築を終了しています...");
+dm("");
+dm("『%s』の初期化に %d msec かかりました。".sprintf(System.title, tmpSeconds + tmpSecondsAll));
+dm("");
+
+delete tmpSeconds;
+delete tmpSecondsAll;

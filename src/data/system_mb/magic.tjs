@@ -1,0 +1,303 @@
+/******************************************************************************
+	MercuryBlue初期化ファイル
+*******************************************************************************/
+
+// 画像キャッシュの制限値を設定
+System.graphicCacheLimit = 16 * 1024 * 1024;
+
+// MercuryBlueシステムレイヤのバージョン
+var MBSystemVersion = '2.1';
+
+// 鱧天のバージョン
+var MBHamoTemVersion = "1.1";
+
+dm("システム `MercuryBlue ver.%s' の構築を開始します...".sprintf(MBSystemVersion));
+dm("エディション「鱧天 ver.%s」".sprintf(MBHamoTemVersion));
+
+//==============================================================================
+
+// 画像レイヤ絶対値指定
+var MBLayerAbs = %[
+	/* 立ち絵レイヤ */
+	chlLeft :		  10000,
+	chlRight :		  11000,
+	chlCenter :		  12000,
+	cinemat : 900000, 		 // シネマット
+	/* メッセージレイヤは1000000番台 */
+	chlLead :		1100000,
+	/* 立ち絵レイヤここまで */
+	selection :		1700000, // 選択肢レイヤ
+	quicksave :     1700500,
+	contextMenu :	1900000, // コンテクストメニュー
+	backpack :		2000000, // BackPack
+	dialog :		2500000, // ダイアログ関係
+	blackout :		3000000,	// 暗幕レイヤ
+	loadCartain :	3000500,	// ローディングカーテン
+	actCanceller :	3100000	// アクションキャンセラ
+];
+
+// 色指定
+var MBColors = %[
+	window : %[
+		border     : 0xcc004b6d,
+		background : 0xcc000000,
+	],
+	font : %[
+		label : %[
+			title       : 0x98d7f5,
+			normal      : 0x98d7f5,
+			disabled    : 0x888888,
+			bg_selected : 0x400080ff,
+			bg_normal   : 0x00000000
+		],
+		scene : %[
+			normal : 0x000000,
+			cinema : 0xffffff
+		]
+	],
+	cinemat : %[
+		mask_tp : 0x00000000,
+		mask    : 0x55000000,
+		text    : 0xffffff
+	]
+];
+
+// フォントスタイル指定
+var MBFontStyle = %[
+	size : %[
+		label : 14,
+		scene : 16
+	],
+	face : %[
+		propotional : "ＭＳ Ｐゴシック",
+		normal : "ＭＳ ゴシック"
+	]
+];
+
+
+//------------------------------------------------------------------------------
+// 操作用仮想ゲームパッド値指定
+
+
+//------------------------------------------------------------------------------
+// 各種トリガ
+var _TRIG_CONTMENU_CLOSED = 'CONTEXTMENU_CLOSED';
+var _TRIG_LOADCANCEL = 'LOAD_CANCEL';
+var _TRIG_DIVING_FINISH_LOAD = 'DIVING_FINISH_LOAD';
+var _TRIG_ADVMENU_CLOSED = 'ADVMENU_FINISH';
+
+//------------------------------------------------------------------------------
+// タグハンドラ参照
+var TAG = kag.tagHandlers;
+
+//------------------------------------------------------------------------------
+// その他（擬似）定数
+
+var __BF_ACTION_PARAM = 0.85;
+var __BS_ACTION_RATE = 3.1;
+
+// 機能ページから「戻る」ボタンのサイズ
+var __RTB_WIDTH  = 189;
+var __RTB_HEIGHT =  25;
+
+// コンテクストメニューを「閉じる」ボタンのサイズ
+var __CLB_WIDTH  = 147;
+var __CLB_HEIGHT =  25;
+
+//------------------------------------------------------------------------------
+// 定数のような変数を定義
+global.fadetime = 300;		// 画像表示/非表示切り替え時間
+global.changetime = 200;	// 画像入れ替え時間
+global.wipetime = 700;		// ワイプ時間
+
+// メッセージボックス関連色指定
+global.mboxColor = %[];
+global.mboxColor.border = 0xcc004b6d;
+global.mboxColor.background = 0xcc000000;
+global.mboxColor.font_normal = 0x98d7f5;
+global.mboxColor.font_disable = 0x888888;
+global.mboxColor.selected_fontbg = 0x400080ff;
+
+// フォントサイズ
+global.fontSize = %[];
+global.fontSize.normal = 16;
+global.fontSize.menu = 14;
+global.fontSize.mbox = 14;
+
+// チェッカー
+var tmpChecker    = false;
+var tmpSeconds    = 0;
+var tmpSecondsAll = 0;
+
+
+//==============================================================================
+// KAGの部分的Hack
+
+dm("");
+dm("KAGシステムのハッキングを開始します...");
+
+function hackKAGSystemWith(fname)
+{
+	if (fname == "") {
+		dm("<MBSystem> 上書きスクリプトファイルが指定されていないため、処理はスキップされました。");
+		tmpChecker = true;
+		return;
+	}
+	
+	if (!Storages.isExistentStorage(fname)) {
+		dm("<MBSystem> 上書きスクリプトファイル `%s' は存在しません。処理はスキップされました。".sprintf(fname));
+		tmpChecker = true;
+		return;
+	}
+	
+	var st = System.getTickCount();
+	Scripts.execStorage(fname);
+	dm("`%s' による上書き処理が完了しました(%s ms)".sprintf(fname, (System.getTickCount() - st)));
+	tmpSeconds += System.getTickCount() - st;
+}
+
+hackKAGSystemWith("system_mb/init/kaghack/aboutGraphics.tjs");
+hackKAGSystemWith("system_mb/init/kaghack/aboutDataStore.tjs");
+hackKAGSystemWith("system_mb/init/kaghack/aboutUI.tjs");
+hackKAGSystemWith("system_mb/init/kaghack/aboutWait.tjs");
+
+delete hackKAGSystemWith;
+dm("ハッキング処理に %d msec かかりました。".sprintf(tmpSeconds));
+dm("ハッキング処理を終了しています...");
+
+tmpSecondsAll += tmpSeconds;
+tmpSeconds = 0;
+
+
+//==============================================================================
+// クラスと関数の組込
+
+dm("");
+dm("システムクラスの組み込みを開始します...");
+
+function createMBSystem(fname)
+{
+	if (fname == "") {
+		dm("<MBSystem> 定義ファイルが指定されていないため、処理はスキップされました。");
+		tmpChecker = true;
+		return;
+	}
+	
+	if (!Storages.isExistentStorage(fname)) {
+		dm("<MBSystem> 定義ファイル `%s' は存在しません。処理はスキップされました。".sprintf(fname));
+		tmpChecker = true;
+		return;
+	}
+	
+	var st = System.getTickCount();
+	Scripts.execStorage(fname);
+	dm("`%s' の組込が完了しました(%s ms)".sprintf(fname, (System.getTickCount() - st)));
+	
+	tmpSeconds += System.getTickCount() - st;
+}
+
+// 独自関数
+createMBSystem("system_mb/functions/sndFunctions.tjs");	// サウンド関連関数
+createMBSystem("system_mb/functions/grpFunctions.tjs");	// グラフィック関連関数
+createMBSystem("system_mb/functions/globFunctions.tjs");	// その他
+
+// Mercury-Blueコア
+createMBSystem("system_mb/MercuryBlue.tjs");
+createMBSystem("system_mb/MBObject.tjs");
+
+// UI基礎部品
+createMBSystem("system_mb/ui/MBSystemLayer.tjs");
+createMBSystem("system_mb/ui/MBComponentLayer.tjs");
+createMBSystem("system_mb/ui/MBSelectItem.tjs");
+createMBSystem("system_mb/ui/MBSelectItemForFile.tjs");
+createMBSystem("system_mb/ui/MBButton.tjs");
+createMBSystem("system_mb/ui/MBAnimationButton.tjs");
+createMBSystem("system_mb/ui/MBWindows.tjs");
+createMBSystem("system_mb/ui/MBScrollButtons.tjs");
+createMBSystem("system_mb/ui/MBPagingUnit.tjs");
+createMBSystem("system_mb/ui/MBEditLayer.tjs");
+createMBSystem("system_mb/ui/MBToolManualLayer.tjs");
+createMBSystem("system_mb/ui/MBSystemClickWaitLayer.tjs");
+
+// システム系
+createMBSystem("system_mb/mb/MBSystemManager.tjs");
+createMBSystem("system_mb/mb/system/MBFocusController.tjs");
+createMBSystem("system_mb/mb/system/MBActionCanceller.tjs");
+createMBSystem("system_mb/mb/system/MBBookMarkRestore.tjs");
+createMBSystem("system_mb/mb/system/MBBookMarkStore.tjs");
+createMBSystem("system_mb/mb/system/bookmark/MBBookMarkSelectPanel.tjs");
+createMBSystem("system_mb/mb/system/MBPlayTimeCounter.tjs");
+createMBSystem("system_mb/mb/system/MBContextMenu.tjs");
+createMBSystem("system_mb/mb/system/cmenu/MBContextMenuItem.tjs");
+createMBSystem("system_mb/mb/system/cmenu/MBContextMenuButton.tjs");
+createMBSystem("system_mb/mb/system/cmenu/MBContextUnderLayer.tjs");
+createMBSystem("system_mb/mb/system/cmenu/MBDefaultContextMenu.tjs");
+createMBSystem("system_mb/mb/system/userconf/MBControllPanel.tjs");
+createMBSystem("system_mb/mb/system/userconf/MBControllPanelBasicUI.tjs");
+createMBSystem("system_mb/mb/system/userconf/MBAudioControllPanel.tjs");
+createMBSystem("system_mb/mb/system/userconf/MBCharSpeedTestLayer.tjs");
+createMBSystem("system_mb/mb/system/MBQuickSave.tjs");
+
+// ヒストリ
+createMBSystem("system_mb/mb/system/MBHistoryLayer.tjs");
+createMBSystem("system_mb/mb/system/history/MBHistoryScrollPane.tjs");
+createMBSystem("system_mb/mb/system/history/MBHistoryScrollBar.tjs");
+createMBSystem("system_mb/mb/system/history/MBHistoryScrollPeg.tjs");
+
+
+// 画像系
+createMBSystem("system_mb/mb/MBCharManager.tjs");
+createMBSystem("system_mb/mb/MBGraphicManager.tjs");
+createMBSystem("system_mb/mb/graphic/MBCartainController.tjs");
+createMBSystem("system_mb/mb/graphic/MBHumanSystem.tjs");
+createMBSystem("system_mb/mb/graphic/MBCinematController.tjs");
+
+// シーン管理系
+createMBSystem("system_mb/mb/MBSceneManager2.tjs");
+
+
+
+if (tmpChecker == true) {
+	throw new Exception ("初期化中にエラーが発生しました。\nインストールをやり直してみてください。");
+}
+
+// 設定ファイルの読み込み（システム設定以外）
+Scripts.execStorage("_preferences/graphics.tjs");
+Scripts.execStorage("_preferences/contents.tjs");
+
+// 初期化
+createMBSystem("system_mb/init/withSystemManager.tjs");
+createMBSystem("system_mb/init/withGraphicManager.tjs");
+createMBSystem("system_mb/init/withSceneManager.tjs");
+createMBSystem("system_mb/init/withMBQuickSave.tjs");
+createMBSystem("system_mb/init/withMBCharManager.tjs");
+
+// ヒストリレイヤを作り直す
+kag.remove(kag.historyLayer);
+invalidate kag.historyLayer;
+kag.historyLayer = new MBHistoryLayer(kag, kag.fore.base);
+kag.add(kag.historyLayer);
+
+
+delete createMBSystem;
+dm("システムの構築に %d msec かかりました。".sprintf(tmpSeconds));
+dm("構築を終了しています...");
+dm("");
+dm("MercuryBlueの初期化に %d msec かかりました。".sprintf(tmpSeconds + tmpSecondsAll));
+dm("");
+dm("<MBSystem> 『%s』を起動中...".sprintf(System.title));
+dm("");
+
+tmpSeconds    = 0;
+tmpSecondsAll = 0;
+
+// モジュールの初期化ファイルへ
+for (tf.i=0; tf.i<MBSystemPref.modules.count; tf.i++) {
+	if (Storages.isExistentStorage(MBSystemPref.modules[tf.i])) {
+		Scripts.execStorage(MBSystemPref.modules[tf.i]);
+	}
+	else {
+		throw new Exception("有効なモジュールが見つかりません。\nインストールをやり直してみてください。");
+	}
+}
+

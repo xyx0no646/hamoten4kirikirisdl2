@@ -1,0 +1,48 @@
+/******************************************************************************
+	system_mb/mb/system/cmenu/MBEndListContextMenu.tjs
+*******************************************************************************/
+
+
+class MBEndListContextMenu extends MBNormalContextMenu
+{
+	var objMenuLabelArray = [ 'エンディング一覧に戻る', 'メッセージ枠を隠す (H)', '--', '環境設定'];
+	
+	var intSceneSkipIndex   = 98;
+	var intMessageSkipIndex = 99;
+	
+	function MBEndListContextMenu(win, par, own)
+	{
+		// コンストラクタ
+		
+		dm('hahaha');
+		super.MBNormalContextMenu(...);
+	}
+	
+	function finalize()
+	{
+		// ファイナライザ
+		
+		super.finalize(...);
+	}
+	
+	
+	//==========================================================================
+	
+	function doOptionalWork(label)
+	{
+		// オプション項目の動作
+		
+		switch (label) {
+			case 'エンディング一覧に戻る':
+				//TAG.unlocksnapshot(%[]);
+				window.conductor.onReturn(%[]);
+				disableAll(false);
+				sndfunc.seDeside();
+				window.process("", "*scene-end");
+				SystemManager.destroyContextMenu();
+				return;
+		}
+		
+		super.doOptionalWork(...);
+	}
+}

@@ -1,0 +1,138 @@
+/******************************************************************************
+	system_xmb/xmb/MBCharManager.tjs
+*******************************************************************************/
+
+class MBCharManager extends MBObject
+{
+	// プロパティ
+	
+	
+	// 管理オブジェクト
+	var objIDArray = [];	// 管理用ID配列
+	var objChars   = %[];	// キャラクタ情報格納辞書配列
+	
+	
+	function MBCharManager(win)
+	{
+		// コンストラクタ
+		
+		super.MBObject(win);
+		init();
+	}
+	
+	function finalize()
+	{
+		// ファイナライザ
+		
+		super.finalize(...);
+	}
+	
+	function init()
+	{
+		// イニシャライザ
+		
+	}
+	
+	
+	//==========================================================================
+	// 管理メソッド
+	
+	function addCharInfo(id)
+	{
+		// キャラクタ情報を追加して、そのオブジェクトを返す
+		
+		if (objIDArray.find(id) > -1) {
+			throw new Exception("同一IDでキャラクタを登録することはできません。");
+			return;
+		}
+		
+		objChars[id] = %[
+			name     : 'undefined',
+			faceFile : 'face1/10_a'
+		];
+		objIDArray.add(id);
+		
+		return objChars[id];
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function getCharInfo(id)
+	{
+		// 指定されたキャラクタ情報を返す
+		
+		if (objIDArray.find(id) > -1) {
+			return objChars[id];
+		}
+		else {
+			return void;
+		}
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function removeCharInfo(id)
+	{
+		// 指定されたキャラクタ情報を消去する
+		
+		var idx = objIDArray.find(id);
+		
+		if (idx < 0) {
+			dm("<MBCharmanager> 指定されたキャラクタ情報は見付かりませんでした。処理はスキップされました。");
+			return;
+		}
+		
+		delete objChars[id];
+		objIDArray.erase(idx);
+	}
+	
+	
+	//==========================================================================
+	
+	function save()
+	{
+		// セーブ
+		
+		var dict = %[
+			idents : [],
+			chars  : %[]
+		];
+		
+		dict.idents.assign(objIDArray);
+		
+		var i;
+		for (i=0; i<objIDArray.count; i++) {
+			var key = objIDArray[i];
+			dict.chars[key] = %[];
+			(Dictionary.assignStruct incontextof dict.chars[key])(objChars[key]);
+		}
+		
+		return dict;
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function load(dict)
+	{
+		// ロード
+		
+		if (dict.idents !== void) {
+			objIDArray.assign(dict.idents);
+		}
+		
+		var i;
+		for (i=0; i<objIDArray.count; i++) {
+			var key = objIDArray[i];
+			if (objChars[key] === void) {
+				objChars[key] = %[];
+			}
+			if (dict.chars[key] === void) {
+				continue;
+			}
+			(Dictionary.assignStruct incontextof objChars[key])(dict.chars[key]);
+		}
+		
+		// GraphicManagerに立ち絵の復帰を要請
+		GraphicManager.hsRestructOnLoad();
+	}
+}

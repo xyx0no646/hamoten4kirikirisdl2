@@ -1,0 +1,487 @@
+/*******************************************************************************
+	system_mb/mb/graphic/MBHumanSystem.tjs
+********************************************************************************/
+
+
+class MBHumanSystem
+{
+	var window;	// ウィンドウ参照
+	var basedir;	// 画像のベースディレクトリ
+	var layid;	// レイヤのIDというかなんと言うか
+	
+	var fore = [];	// 表レイヤ
+	var back = [];	// 裏レイヤ
+	
+	var imageNames = [];	// 画像名配列
+	
+	var layercount = 7; // レイヤの枚数
+	var imageWidth = 600;	// 画像の横幅
+	var imageHeight = 600;	// 画像の縦幅
+	
+	var charID;	// 表示中のキャラクタID
+	var extended_state;	// 大きかったりするかどうか
+	
+	var usingState = false;	// 被使用ステータス
+	
+	
+	function MBHumanSystem(win, bd, id)
+	{
+		// コンストラクタ
+		
+		window = win;
+		basedir = sysfunc.getPathCharImage(bd);
+		layid = id;
+		
+		// レイヤを作る
+		//fore[0] = new CharacterLayer(window, window.fore.base, "%s-body-fore".sprintf(bd), 1);
+		//back[0] = new CharacterLayer(window, window.back.base, "%s-body-back".sprintf(bd), 1);
+		fore[0] = new MBComponentLayer(window, window.fore.base, "%s-body-fore".sprintf(bd), 1);
+		back[0] = new MBComponentLayer(window, window.back.base, "%s-body-back".sprintf(bd), 1);
+		
+		fore[0].loadImages(%[storage : 'clearmat']);
+		back[0].loadImages(%[storage : 'clearmat']);
+		
+		fore[0].setCompLayer(back[0]);
+		back[0].setCompLayer(fore[0]);
+		
+		// レイヤに初期設定を与える
+		setSizeToDefault();
+		setPosition(MBGraphicPref.chOnCenterX, 0);
+		setOpacity(255);
+		clearAllLayer();
+		setVisibility(true);
+		fore[0].hitType = htMask;
+		fore[0].hitThreshold = 256;
+		back[0].hitType = htMask;
+		back[0].hitThreshold = 256;
+	}
+	
+	function finalize()
+	{
+		// ファイナライザ
+		
+		var i;
+		for (i=0; i<fore.count; i++) {
+			invalidate fore[i] if (fore[i] !== void);
+			invalidate back[i] if (back[i] !== void);
+		}
+	}
+	
+	
+	//==========================================================================
+	
+	function activate()
+	{
+		// アクティブにする
+		
+		if (usingState) {
+			return;
+		}
+		
+		usingState = true;
+		makeChildren();
+		
+		dm("<HumanSystem> 立ち絵レイヤ %d をアクティブにしました。".sprintf(layid));
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function disactivate()
+	{
+		// 非アクティブにする
+		
+		if (!usingState) {
+			return;
+		}
+		
+		usingState = false;
+		destroyChildren();
+		
+		dm("<HumanSystem> 立ち絵レイヤ %d を非アクティブにしました。".sprintf(layid));
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function updateForWink()
+	{
+		// 目パチ設定を反映させるためにfaceを読み直す
+		
+		if (!usingState || charID == "" || imageNames[1] == "") {
+			return;
+		}
+		
+		fore[1].loadImages(%[storage : "%s/%s".sprintf(basedir, imageNames[1])]);
+	}
+	
+	function makeChildren()
+	{
+		// 子レイヤを作る
+		
+		var i;
+		for (i=0; i<layercount; i++) {
+			if (i > 0) {
+				fore[i] = new MBComponentLayer(window, fore[0], "%s-%s-fore".sprintf(basedir, i), i + 1);
+				back[i] = new MBComponentLayer(window, back[0], "%s-%s-back".sprintf(basedir, i), i + 1);
+				
+				fore[i].hitType = htMask;
+				fore[i].hitThreshold = 256;
+				back[i].hitType = htMask;
+				back[i].hitThreshold = 256;
+			}
+			
+			fore[i].setCompLayer(back[i]);
+			back[i].setCompLayer(fore[i]);
+		}
+	}
+	
+	function destroyChildren()
+	{
+		// 子レイヤを破棄する
+		
+		fore[0].loadImages(%[storage : 'clearmat']);
+		back[0].loadImages(%[storage : 'clearmat']);
+		
+		var i;
+		var lim = fore.count;
+		for (i=1; i<lim; i++) {
+			invalidate fore[1] if (fore[1] !== void);
+			invalidate back[1] if (back[1] !== void);
+			
+			fore.erase(1);
+			back.erase(1);
+		}
+		
+		imageNames.clear();
+		imageNames[0] = 'humanclear';
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function setBaseDir(str)
+	{
+		// ベースディレクトリを設定する
+		
+		basedir = sysfunc.getPathCharImage(str);
+		charID  = str;
+		
+		var reg_b  = new RegExp('_b');
+		var reg_ex = new RegExp('_ex');
+		
+		if (reg_b.test(charID)) {
+			charID = charID.substr(0, charID.indexOf('_'));
+			extended_state = '_b';
+		}
+		else if (reg_ex.test(charID)) {
+			basedir = sysfunc.getPathCharImageEx(str);
+			charID  = charID.substr(0, charID.indexOf('_'));
+			extended_state = '_ex';
+		}
+		else {
+			extended_state = '';
+		}
+	}
+	
+	function setAbsolute(num)
+	{
+		// レイヤの絶対位置を設定
+		
+		var i;
+		for (i=0; i<fore.count; i++) {
+			fore[i].absolute = num + i;
+			back[i].absolute = num + i;
+		}
+	}
+	
+	function setSizeToDefault()
+	{
+		// レイヤのサイズを元に戻す
+		
+		setSizeTo(600, 600);
+	}
+	
+	function setSizeTo(w=600, t=600)
+	{
+		// レイヤのサイズを変える
+		
+		setPosition(
+			fore[0].left + ((imageWidth - w)>>1),
+			fore[0].top + ((imageHeight - t)>>1)
+		);
+		
+		imageWidth = w;
+		imageHeight = t;
+		
+		var i;
+		for (i=0; i<fore.count; i++) {
+			fore[i].setImageSize(imageWidth, imageHeight);
+			fore[i].setSizeToImageSize();
+			
+			back[i].setImageSize(imageWidth, imageHeight);
+			back[i].setSizeToImageSize();
+		}
+	}
+	
+	function setPosition(x, y)
+	{
+		// レイヤの表示位置を設定
+		
+		fore[0].setPos(x, y);
+		back[0].setPos(x, y);
+		
+		var i;
+		for (i=1; i<fore.count; i++) {
+			fore[i].setPos(0, 0);
+			back[i].setPos(0, 0);
+		}
+	}
+	
+	function clearAllLayer()
+	{
+		// 全レイヤの画像を初期化
+		
+		disactivate();
+	}
+	
+	function setOpacity(num)
+	{
+		// 透明度を設定
+		
+		if (num > 255) {
+			num = 255;
+		}
+		
+		var i;
+		for (i=0; i<fore.count; i++) {
+			fore[i].opacity = num;
+			back[i].opacity = num;
+		}
+	}
+	
+	function setVisibility(bl)
+	{
+		// 可視属性を設定
+		
+		var i;
+		for (i=0; i<fore.count; i++) {
+			fore[i].visible = bl;
+			back[i].visible = bl;
+		}
+	}
+	
+	function setAbsolute(num)
+	{
+		// レイヤ深度を設定
+		
+		if (num < 1) {
+			return;
+		}
+		
+		fore[0].absolute = num;
+		back[0].absolute = num;
+	}
+	
+	function emuBacklay()
+	{
+		// [backlay]のエミュレーション
+		
+		var i;
+		
+		fore[0].visible = true;
+		for (i=0; i<fore.count; i++) {
+			back[i].assignComp();
+		}
+		back[0].absolute = fore[0].absolute;
+	}
+	
+	function prepTrans(num, fname, md="transp")
+	{
+		// トランジションの準備
+		// 裏になっているレイヤに新しい画像を読み込む
+		
+		var cl = back;
+		//var imageNames = imageNames;
+		
+		if (fname == 'humanclear') {
+			imageNames[num] = "humanclear";
+		}
+		else {
+			// 表情ファイルの場合はベース画像を読み込み、PersonalInfoに表情を設定
+			if (num == 1) {
+				var tmpFN = fname.split('/');
+				
+				imageNames[num] = "%s/face".sprintf(tmpFN[0]);
+				global.charinfo[charID].faceFile = "%s_a".sprintf(fname);
+			}
+			else {
+				imageNames[num] = "%s".sprintf(fname);
+			}
+		}
+		
+		//dm(Storages.isExistentStorage(imageNames[num]));
+		
+		back[num].loadImages(%[
+			storage : "%s/%s".sprintf(basedir, imageNames[num]),
+			mode    : md
+		]);
+		back[num].visible = true;
+	}
+	
+	function emuTrans(tm = global.changetime, met = 'crossfade', rul = 'splite2')
+	{
+		// [trans]のエミュレーション
+		
+		fore[0].beginTransition(%[
+			time : tm,
+			method : met,
+			rule : rul
+		]);
+	}
+	
+	function stopTrans()
+	{
+		// トランジション停止ラッパーメソッド
+		
+		fore[0].stopTransition();
+		back[0].stopTransition();
+	}
+	
+	function restructLayers()
+	{
+		// トランジションの後処理
+		/*
+			つまるところ、次のような処理をする：
+			
+			1) トランジションの結果、foreが裏に、backが表になっているはずである。
+			
+			2) そこで、まずbackをforeにassignCompする
+			
+			3) 次に、foreの親をfore.baseに、backの親をback.baseに設定しなおす。重なりも考慮すること。
+		*/
+		
+		var abs = fore[0].absolute;
+		var i;
+		
+		for (i=0; i<fore.count; i++) {
+			fore[i].assignComp();
+		}
+		
+		fore[0].parent = window.fore.base;
+		fore[0].absolute = abs;
+		
+		back[0].parent = window.back.base;
+		back[0].absolute = abs;
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function rebuildLayersByName()
+	{
+		// imageNamesを元にレイヤ構造を復帰する
+		
+		if (!usingState) {
+			return;
+		}
+		
+		dm("");
+		dm("レイヤの復帰を開始します...");
+		var i;
+		for (i=0; i<fore.count; i++) {
+			//dm(i, imageNames[i]);
+			var mode = 'transp';
+			if (i == 2 || i == 6) {
+				mode = 'mul';
+			}
+			
+			if (imageNames[i] == "") {
+				continue;
+			}
+			else if (imageNames[i] == 'humanclear') {
+				fore[i].loadImages(%[
+					storage : 'humanclear',
+					mode    : mode
+				]);
+				continue;
+			}
+			//dm("%s/%s をロード中...".sprintf(basedir, imageNames[i]));
+			fore[i].loadImages(%[
+				storage : "%s/%s".sprintf(basedir, imageNames[i]),
+				mode    : mode
+			]);
+			
+			fore[i].visible = true;
+		}
+		
+		//updateForWink();
+	}
+	
+	//==========================================================================
+	
+	function save()
+	{
+		// セーブ
+		
+		var i;
+		var dict = %[
+			//layStruct  : [],
+			//basedir    : basedir,
+			charID     : charID,
+			exstate    : extended_state,
+			usingState : usingState,
+			layindex   : fore[0].absolute,
+			posx       : fore[0].left,
+			posy       : fore[0].top,
+			layop      : fore[0].opacity,
+			imageNames : []
+		];
+		
+		/*
+		for (i=0; i<fore.count; i++) {
+			dict.layStruct[i] = fore[i].store();
+		}
+		*/
+		
+		dict.imageNames.assign(imageNames);
+		
+		return dict;
+	}
+	
+	function load(dict)
+	{
+		// ロード
+		
+		charID         = dict.charID;
+		usingState     = dict.usingState;
+		extended_state = dict.exstate;
+		
+		if (dict.layindex !== void) {
+			fore[0].absolute = dict.layindex;
+			back[0].absolute = dict.layindex;
+		}
+		
+		if (dict.posx !== void) {
+			fore[0].left = dict.posx;
+			back[0].left = dict.posx;
+			
+			fore[0].top = dict.posy;
+			back[0].top = dict.posy;
+			
+			fore[0].opacity = dict.layop;
+			back[0].opacity = dict.layop;
+		}
+		
+		setBaseDir(charID + extended_state);
+		imageNames.assign(dict.imageNames);
+		
+		if (usingState) {
+			if (fore.count < layercount) {
+				makeChildren();
+				//setBaseDir(charID + extended_state);
+			}
+		}
+		else {
+			destroyChildren();
+		}
+		
+	}
+}
+

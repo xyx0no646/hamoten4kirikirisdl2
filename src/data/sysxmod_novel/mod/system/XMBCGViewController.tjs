@@ -1,0 +1,584 @@
+/******************************************************************************
+	system_xmb/xmb/system/XMBCGViewController.tjs
+*******************************************************************************/
+
+
+class XMBCGViewController extends MBObject
+{
+	// メンバ変数などなど
+	var strBlankIcon  = '_blank';
+	var strIconDir    = sysfunc.getPathImage('extra/cgview');
+	var strEndTrigger = 'end_contextmenu';
+	
+	var intMaxColsInPage = 5;
+	var intMaxRowsInPage = 5;
+	var intPageNumber    = 0;
+	var intFrameStartPosition = %['x' => 150, 'y' => 50];
+	var intFrameMargin        = 5;
+	
+	var intCurrentIndex = 0;
+	var intCurrentLastRow;
+	var intCurrentLastPoint;
+	var intDefaultCenterRow = 2;
+	var intCenterRow;
+	
+	var intNumOfEnds = 0;
+	
+	var isGoing;
+	
+	var objButtonSrcArray = [];
+	
+	
+	// テーブル
+	var tblTargetFiles = [];	// CG回想の対象となるファイル一覧
+	var tblViewSettings = [];	// CG回想の表示設定
+	
+	// 管理下オブジェクト
+	var objBGLayer;
+	var objImageButtons = [];
+	var objImageIcons   = [];
+	var objCloseButton;
+	var objNextPageButton;
+	var objPrevPageButton;
+	
+	// 参照とか
+	var refFocusMember;
+	var refKnownCheck;
+	
+	
+	function XMBCGViewController(win)
+	{
+		// コンストラクタ
+		
+		super.MBObject(win);
+	}
+	
+	function finalize()
+	{
+		// ファイナライザ
+		
+		SystemManager.fcRemoveStackMember(refFocusMember);
+		
+		invalidate objPrevPageButton if (objPrevPageButton !== void);
+		invalidate objNextPageButton if (objNextPageButton !== void);
+		invalidate objCloseButton    if (objCloseButton !== void);
+		
+		var i;
+		for (i=0; i<objImageButtons.count; i++) {
+			invalidate objImageButtons[i] if (objImageButtons[i] !== void);
+			invalidate objImageIcons[i]   if (objImageIcons[i] !== void);
+		}
+		
+		invalidate objBGLayer if (objBGLayer !== void);
+		
+		super.finalize(...);
+	}
+	
+	
+	//==========================================================================
+	
+	function StandBy()
+	{
+		// 起動準備
+		
+		if (!LoadTableFromCsv(MBContPref.CGViewDefinitionFile)) {
+			throw new Exception("CG回想対象定義ファイルが見つかりません。");
+		}
+		
+		if (kag.sflags.MBCGViewKnownCheck == void) {
+			kag.sflags.MBCGViewKnownCheck = %[];
+		}
+		
+		refKnownCheck = kag.sflags.MBCGViewKnownCheck;
+		
+		strIconDir   = sysfunc.getPathImage(MBContPref.CgvFrameImagePath);
+		strBlankIcon = sysfunc.getPathImage(MBContPref.CgvUnknownThumbnail);
+		
+		intMaxColsInPage = MBGraphicPref.CgvFrameCols;
+		intMaxRowsInPage = MBGraphicPref.CgvFrameRows;
+		
+		intFrameStartPosition.x = MBGraphicPref.CgvFrameStartPositionX;
+		intFrameStartPosition.y = MBGraphicPref.CgvFrameStartPositionY;
+		
+		intFrameMargin = MBGraphicPref.CgvFrameMargin;
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function LoadTableFromCsv(path)
+	{
+		// 指定されたCSVファイルからテーブルをロードする
+		
+		if (!Storages.isExistentStorage(path)) {
+			return false;
+		}
+		
+		var csv = [];
+		csv.load(path);
+		
+		var reg = new RegExp("(\"|')", "g");
+		var spl = new RegExp(", *");
+		
+		for (var i=1; i<csv.count; i++) {
+			if (csv[i] == "") {
+				continue;
+			}
+			
+			var line = reg.replace(csv[i], "");
+			var tmp = spl.split(line);
+			
+			tblTargetFiles.add(tmp[0]);
+			tblViewSettings.add(tmp);
+		}
+		
+		return true;
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function init()
+	{
+		// 表示初期化処理
+		// このメソッドはエクストラメニューからCG鑑賞を呼び出した時点でのみ呼ばれる
+		
+		objButtonSrcArray.clear();
+		
+		for (var i=0; i<tblViewSettings.count; i++) {
+			if (refKnownCheck[tblViewSettings[i][0]]) {
+				objButtonSrcArray.push(tblViewSettings[i]);
+			}
+			else {
+				objButtonSrcArray.push('nill');
+			}
+		}
+		
+		intCurrentIndex = 0;
+	}
+	
+	//==========================================================================
+	
+	function show()
+	{
+		// 表示処理
+		
+		intPageNumber = intCurrentIndex \ (intMaxColsInPage * intMaxRowsInPage);
+		
+		if (objBGLayer === void || !isvalid(objBGLayer)) {
+			objBGLayer = new XMBStoryMapBGLayer(window, window.fore.base, this);
+			objBGLayer.loadImages(sysfunc.getPathBGImage('cgview_bg'));
+			objBGLayer.setSizeToImageSize();
+			objBGLayer.absolute = MBLayerAbs.cgviewer;
+			
+			objCloseButton = new MBButton(window, objBGLayer);
+			objCloseButton.setSizeToImageSize();
+			objCloseButton.loadImages(sysfunc.getPathImage('bt_return' + MBGraphicPref.CgvReturnButtonSuffix));
+			objCloseButton.hint = "エクストラメニューへ戻る";
+			objCloseButton.left = MBGraphicPref.CgvReturnButtonPositionX;
+			objCloseButton.top  = MBGraphicPref.CgvReturnButtonPositionY;
+			objCloseButton.visible = true;
+			
+			objNextPageButton = new MBButton(window, objBGLayer);
+			objNextPageButton.setSizeToImageSize();
+			objNextPageButton.loadImages(sysfunc.getPathImage('extra/cgview/bt_nextpage'));
+			objNextPageButton.hint = '次のページ';
+			objNextPageButton.left = MBGraphicPref.CgvNextButtonPositionX;
+			objNextPageButton.top  = MBGraphicPref.CgvNextButtonPositionY;
+			
+			objPrevPageButton = new MBButton(window, objBGLayer);
+			objPrevPageButton.setSizeToImageSize();
+			objPrevPageButton.loadImages(sysfunc.getPathImage('extra/cgview/bt_prevpage'));
+			objPrevPageButton.hint = '前のページ';
+			objPrevPageButton.left = MBGraphicPref.CgvPrevButtonPositionX;
+			objPrevPageButton.top  = MBGraphicPref.CgvPrevButtonPositionY;
+		}
+		else {
+			objBGLayer.parent = window.fore.base;
+			objBGLayer.absolute = MBLayerAbs.cgviewer;
+		}
+		
+		var i, px, py;
+		for (i=0; i<intMaxColsInPage * intMaxRowsInPage; i++) {
+			px = intFrameStartPosition.x + (MBGraphicPref.CgvFrameWidth + intFrameMargin) * (i % intMaxColsInPage);
+			py = intFrameStartPosition.y + (MBGraphicPref.CgvFrameHeight + intFrameMargin) * (i \ intMaxColsInPage);
+			
+			objImageIcons[i] = new MBComponentLayer(window, objBGLayer);
+			objImageIcons[i].setPos(px, py);
+			objImageIcons[i].hitThreshold = 256;
+			
+			objImageButtons[i] = new XMBStoryMapFrameButton(window, objBGLayer);
+			objImageButtons[i].setImageSize(MBGraphicPref.CgvFrameWidth, MBGraphicPref.CgvFrameHeight);
+			objImageButtons[i].setSizeToImageSize();
+			objImageButtons[i].setPos(px, py);
+		}
+		
+		update();
+		
+		objBGLayer.visible = true;
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function hide()
+	{
+		// 非表示化
+		
+		if (objBGLayer === void || !isvalid(objBGLayer)) {
+			return;
+		}
+		
+		SystemManager.fcRemoveStackMember(refFocusMember);
+		
+		objBGLayer.visible = false;
+		
+		var i;
+		for (i=0; i<objImageButtons.count; i++) {
+			invalidate objImageButtons[i] if (objImageButtons[i] !== void);
+			invalidate objImageIcons[i]   if (objImageIcons[i] !== void);
+		}
+		
+		window.trigger(strEndTrigger);
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function update()
+	{
+		// 表示内容を更新
+		
+		updateImageButtons();
+		updatePageButtonState();
+		setFocusStack();
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function updateImageButtons()
+	{
+		// イメージボタンのアップデート
+		
+		var offset = intMaxColsInPage * intMaxRowsInPage * intPageNumber;
+		var i, idx;
+		for (i=0; i<intMaxColsInPage * intMaxRowsInPage; i++) {
+			idx = i + offset;
+			
+			if (idx >= objButtonSrcArray.count) {
+				objImageIcons[i].visible   = false;
+				objImageButtons[i].visible = false;
+				continue;
+			}
+			
+			if (objButtonSrcArray[idx] != 'nill') {
+				objImageIcons[i].loadImages(%[storage : "%s/%s".sprintf(strIconDir, objButtonSrcArray[idx][0])]);
+				objImageIcons[i].setSizeToImageSize();
+				
+				objImageButtons[i].id = idx;
+			}
+			else {
+				objImageIcons[i].loadImages(%[storage : strBlankIcon]);
+				objImageIcons[i].setSizeToImageSize();
+				
+				objImageButtons[i].id = void;
+			}
+			
+			objImageIcons[i].visible   = true;
+			objImageButtons[i].visible = true;
+			
+			intCurrentLastRow   = i \ intMaxColsInPage;
+			intCurrentLastPoint = i;
+		}
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function updatePageButtonState()
+	{
+		// ページボタンの表示を切り替える
+		
+		if (objButtonSrcArray[intMaxColsInPage * intMaxRowsInPage * (intPageNumber + 1)] !== void) {
+			objNextPageButton.visible = true;
+		}
+		else {
+			objNextPageButton.visible = false;
+		}
+		
+		if (intPageNumber > 0) {
+			objPrevPageButton.visible = true;
+		}
+		else {
+			objPrevPageButton.visible = false;
+		}
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function setFocusStack()
+	{
+		// カーソルマップの設定
+		
+		
+		// イメージボタン基本設定
+		intCenterRow = intDefaultCenterRow;
+		if (intCenterRow > intCurrentLastRow) {
+			intCenterRow = intCurrentLastRow;
+		}
+		var i, j, pt, fl;
+		var cr_r;
+		var fr_last;
+		var lr_first, lr_last;
+		for (i=0; i<intMaxRowsInPage; i++) {
+			for (j=0; j<intMaxColsInPage; j++) {
+				var ibt_u, ibt_b, ibt_r, ibt_l;
+				pt = intMaxColsInPage * i + j;
+				
+				if (!objImageButtons[pt].visible) {
+					fl = true;
+					break;
+				}
+				
+				// 上
+				if (i == 0) {
+					if (intCurrentLastRow) {
+						ibt_u = objImageButtons[intMaxColsInPage * intCurrentLastRow + j];
+						if (!ibt_u.visible) {
+							ibt_u = objImageButtons[intMaxColsInPage * (intCurrentLastRow - 1) + j];
+						}
+					}
+				}
+				else {
+					ibt_u = objImageButtons[intMaxColsInPage * (i - 1) + j];
+				}
+				
+				// 下
+				if (i == intCurrentLastRow) {
+					ibt_b = objImageButtons[j];
+				}
+				else {
+					ibt_b = objImageButtons[intMaxColsInPage * (i + 1) + j];
+				}
+				
+				// 右
+				if (j == intMaxColsInPage - 1) {
+					ibt_r = objImageButtons[intMaxColsInPage * i];
+				}
+				else {
+					ibt_r = objImageButtons[pt + 1];
+					if (!ibt_r.visible) {
+						if (i == intCenterRow) {
+							if (objNextPageButton.visible) {
+								ibt_r = objNextPageButton;
+							}
+							else {
+								ibt_r = objPrevPageButton;
+							}
+							cr_r = objImageButtons[pt];
+						}
+						else {
+							ibt_r = objImageButtons[intMaxColsInPage * i];
+						}
+					}
+				}
+				
+				// 左
+				if (j == 0) {
+					if (i == intCurrentLastRow) {
+						ibt_l = objImageButtons[intCurrentLastPoint];
+					}
+					else {
+						ibt_l = objImageButtons[intMaxColsInPage * (i + 1) - 1];
+					}
+				}
+				else {
+					ibt_l = objImageButtons[pt - 1];
+				}
+				
+				objImageButtons[pt].setCursorMap(ibt_u, ibt_r, ibt_b, ibt_l);
+				
+				// 最上段の最後のコマを取得しておく
+				if (i == 0) {
+					fr_last = objImageButtons[pt];
+				}
+				
+				// 最下段の最初と最後のコマを取得しておく
+				if (i == intCurrentLastRow) {
+					if (lr_first == void) {
+						lr_first = objImageButtons[pt];
+					}
+					lr_last = objImageButtons[pt];
+				}
+			}
+			
+			if (fl) {
+				break;
+			}
+		}
+		
+		// 閉じるボタン用基本設定
+		var cbt_u = lr_first;
+		var cbt_b = objImageButtons[0];
+		var cbt_r = objPrevPageButton;
+		var cbt_l = objNextPageButton;
+		
+		// 次のページボタン用基本設定
+		var nbt_u = lr_last;
+		var nbt_b = fr_last;
+		var nbt_r = objCloseButton;
+		var nbt_l = objPrevPageButton;
+		
+		// 前のページボタン用基本設定
+		var pbt_u = lr_last;
+		var pbt_b = fr_last;
+		var pbt_r = objNextPageButton;
+		var pbt_l = objCloseButton;
+		
+		// 調整
+		if (!objNextPageButton.visible && !objPrevPageButton.visible) {
+			if (!objImageButtons[0].visible) {
+				cbt_u = void;
+				cbt_b = void;
+			}
+			cbt_l = void;
+			cbt_r = void;
+		}
+		else {
+			if (objNextPageButton.visible) {
+				fr_last.objCursorMapHash.up   = objNextPageButton;
+				lr_last.objCursorMapHash.down = objNextPageButton;
+				
+				if (!objPrevPageButton.visible) {
+					cbt_r = objNextPageButton;
+					nbt_l = objCloseButton;
+				}
+			}
+			else {
+				fr_last.objCursorMapHash.up   = objPrevPageButton;
+				lr_last.objCursorMapHash.down = objPrevPageButton;
+				
+				pbt_r = objCloseButton;
+				cbt_l = objPrevPageButton;
+			}
+		}
+		
+		objNextPageButton.setCursorMap(nbt_u, nbt_r, nbt_b, nbt_l);
+		objPrevPageButton.setCursorMap(pbt_u, pbt_r, pbt_b, pbt_l);
+		objCloseButton.setCursorMap(cbt_u, cbt_r, cbt_b, cbt_l);
+		
+		SystemManager.fcRemoveStackMember(refFocusMember);
+		refFocusMember = SystemManager.fcPushFocusStack(objCloseButton);
+		
+		if (!objBGLayer.visible) {
+			SystemManager.fcApplyFocusTargetSearch();
+		}
+	}
+	
+	
+	//==========================================================================
+	
+	function onSelectedItemClick(sender)
+	{
+		var working = false;
+		
+		switch (sender) {
+			case objNextPageButton:
+				working = true;
+				sndfunc.seDeside();
+				intPageNumber += 1;
+				update();
+				break;
+			
+			case objPrevPageButton:
+				working = true;
+				sndfunc.seDeside();
+				intPageNumber -= 1;
+				update();
+				break;
+			
+			case objCloseButton:
+				working = true;
+				sndfunc.seDecide();
+				hide();
+				break;
+		}
+		
+		if (working) {
+			return;
+		}
+		
+		// 以下はボタンをクリックしたときの動作
+		if (sender.id !== void) {
+			intCurrentIndex = sender.id;
+			isGoing         = true;
+			sndfunc.seDeside();
+			hide();
+		}
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function getCurrentStruct()
+	{
+		// 表示目標の設定オブジェクトを返す
+		
+		var obj = objButtonSrcArray[intCurrentIndex];
+		
+		var res = %[
+			name : obj[0],
+			sx   : obj[1],
+			sy   : obj[2],
+			lx   : obj[3],
+			ly   : obj[4],
+			mt   : obj[5]
+		];
+		
+		return res;
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function incrementImageIndex()
+	{
+		// インデックスカウンタをひとつ進める
+		
+		var current = intCurrentIndex;
+		
+		do {
+			intCurrentIndex += 1;
+			
+			if (intCurrentIndex >= objButtonSrcArray.count) {
+				//intCurrentIndex = 0;
+				intCurrentIndex  = current;
+				tf.cgv_gotoindex = true;
+			}
+		} while (objButtonSrcArray[intCurrentIndex] == 'nill');
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function isTargetFile(file)
+	{
+		// 渡されたファイル名が回想対象かどうかを返す
+		
+		if (file == "") {
+			return false;
+		}
+		
+		return (tblTargetFiles.find(file) > -1);
+	}
+	
+	
+	//==========================================================================
+	
+	function hideForReturn()
+	{
+		hide();
+	}
+	
+	//--------------------------------------------------------------------------
+	
+	function load(dict)
+	{
+		// ロード時は必ず非表示にすること
+		
+		isGoing = false;
+		hide();
+	}
+}
