@@ -1,0 +1,763 @@
+<!doctype html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <link rel="manifest" id="krkrsdl2-web-manifest" />
+    <script src="./swloader.js" async></script>
+    <title>Kirikiri SDL2</title>
+    <style>
+      body {
+        font-family: arial;
+        margin: 0;
+        padding: none;
+      }
+
+      .emscripten { padding-right: 0; margin-left: auto; margin-right: auto; display: block; }
+      div.emscripten { text-align: center; }      
+      div.emscripten_border { border: 1px solid black; }
+      /* the canvas *must not* have any border or padding, or mouse coords will be wrong */
+      canvas.emscripten { border: 0px none; background-color: black; }
+
+      #emscripten_logo {
+        display: inline-block;
+        margin: 0;
+      }
+
+      .spinner {
+        height: 30px;
+        width: 30px;
+        margin: 0;
+        margin-top: 20px;
+        margin-left: 20px;
+        display: inline-block;
+        vertical-align: top;
+
+        -webkit-animation: rotation .8s linear infinite;
+        -moz-animation: rotation .8s linear infinite;
+        -o-animation: rotation .8s linear infinite;
+        animation: rotation 0.8s linear infinite;
+
+        border-left: 5px solid rgb(235, 235, 235);
+        border-right: 5px solid rgb(235, 235, 235);
+        border-bottom: 5px solid rgb(235, 235, 235);
+        border-top: 5px solid rgb(120, 120, 120);
+        
+        border-radius: 100%;
+        background-color: rgb(189, 215, 46);
+      }
+
+      @-webkit-keyframes rotation {
+        from {-webkit-transform: rotate(0deg);}
+        to {-webkit-transform: rotate(360deg);}
+      }
+      @-moz-keyframes rotation {
+        from {-moz-transform: rotate(0deg);}
+        to {-moz-transform: rotate(360deg);}
+      }
+      @-o-keyframes rotation {
+        from {-o-transform: rotate(0deg);}
+        to {-o-transform: rotate(360deg);}
+      }
+      @keyframes rotation {
+        from {transform: rotate(0deg);}
+        to {transform: rotate(360deg);}
+      }
+
+      #status {
+        display: inline-block;
+        vertical-align: top;
+        margin-top: 30px;
+        margin-left: 20px;
+        font-weight: bold;
+        color: rgb(120, 120, 120);
+      }
+
+      #progress {
+        height: 20px;
+        width: 300px;
+      }
+
+      #controls {
+        display: inline-block;
+        float: right;
+        vertical-align: top;
+        margin-top: 30px;
+        margin-right: 20px;
+      }
+
+      #output {
+        width: 100%;
+        height: 200px;
+        margin: 0 auto;
+        margin-top: 10px;
+        border-left: 0px;
+        border-right: 0px;
+        padding-left: 0px;
+        padding-right: 0px;
+        display: block;
+        background-color: black;
+        color: white;
+        font-family: 'Lucida Console', Monaco, monospace;
+        outline: none;
+      }
+    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  </head>
+  <body>
+    <a href="https://ghpages.uyjulian.pw/krkrsdl2/" style="display: inline-block; vertical-align: middle;">
+      <svg
+       xmlns:dc="http://purl.org/dc/elements/1.1/"
+       xmlns:cc="http://creativecommons.org/ns#"
+       xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+       xmlns:svg="http://www.w3.org/2000/svg"
+       xmlns="http://www.w3.org/2000/svg"
+       xmlns:xlink="http://www.w3.org/1999/xlink"
+       xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+       xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+       sodipodi:docname="krkr.svg"
+       inkscape:version="0.48.5 r10040"
+       sodipodi:version="0.32"
+       id="svg2100"
+       height="50.375"
+       width="50.375"
+       version="1.1">
+        <defs
+           id="defs3">
+          <linearGradient
+             id="linearGradient9055">
+            <stop
+               id="stop9057"
+               offset="0.00000000"
+               style="stop-color:#97c3e8;stop-opacity:1.0000000;" />
+            <stop
+               style="stop-color:#ffffff;stop-opacity:1.0000000;"
+               offset="1.0000000"
+               id="stop9063" />
+            <stop
+               id="stop9059"
+               offset="1"
+               style="stop-color:#97c3e8;stop-opacity:0;" />
+          </linearGradient>
+          <linearGradient
+             id="linearGradient5211">
+            <stop
+               style="stop-color:#d3d0ff;stop-opacity:1.0000000;"
+               offset="0.00000000"
+               id="stop5213" />
+            <stop
+               style="stop-color:#3b34ff;stop-opacity:1.0000000;"
+               offset="1.0000000"
+               id="stop5215" />
+          </linearGradient>
+          <linearGradient
+             id="linearGradient5193">
+            <stop
+               id="stop5195"
+               offset="0.00000000"
+               style="stop-color:#97c3e8;stop-opacity:1.0000000;" />
+            <stop
+               id="stop5197"
+               offset="1"
+               style="stop-color:#97c3e8;stop-opacity:0;" />
+          </linearGradient>
+          <linearGradient
+             id="linearGradient5167">
+            <stop
+               id="stop5169"
+               offset="0"
+               style="stop-color:#bde8fe;stop-opacity:1;" />
+            <stop
+               id="stop5171"
+               offset="1"
+               style="stop-color:#bde8fe;stop-opacity:0;" />
+          </linearGradient>
+          <linearGradient
+             gradientUnits="userSpaceOnUse"
+             y2="902.51355"
+             x2="95.183273"
+             y1="799.13434"
+             x1="95.595039"
+             id="linearGradient5209"
+             xlink:href="#linearGradient5211"
+             inkscape:collect="always" />
+          <linearGradient
+             gradientUnits="userSpaceOnUse"
+             y2="801.67975"
+             x2="94.460098"
+             y1="699.67383"
+             x1="94.32254"
+             id="linearGradient5223"
+             xlink:href="#linearGradient5211"
+             inkscape:collect="always" />
+          <linearGradient
+             gradientTransform="translate(225.7211,-1.535576)"
+             y2="801.67975"
+             x2="94.460098"
+             y1="699.67383"
+             x1="94.32254"
+             gradientUnits="userSpaceOnUse"
+             id="linearGradient5987"
+             xlink:href="#linearGradient5211"
+             inkscape:collect="always" />
+          <linearGradient
+             gradientTransform="translate(215.7844,2.549469)"
+             y2="902.51355"
+             x2="95.183273"
+             y1="799.13434"
+             x1="95.595039"
+             gradientUnits="userSpaceOnUse"
+             id="linearGradient6755"
+             xlink:href="#linearGradient5211"
+             inkscape:collect="always" />
+          <linearGradient
+             y2="579.94507"
+             x2="288.8895"
+             y1="579.94507"
+             x1="112.65855"
+             gradientTransform="translate(262.5741,-93.22157)"
+             gradientUnits="userSpaceOnUse"
+             id="linearGradient9079"
+             xlink:href="#linearGradient9055"
+             inkscape:collect="always" />
+          <linearGradient
+             y2="609.34869"
+             x2="418.60052"
+             y1="609.34869"
+             x1="144.41229"
+             gradientTransform="translate(262.5741,-93.22157)"
+             gradientUnits="userSpaceOnUse"
+             id="linearGradient9081"
+             xlink:href="#linearGradient5211"
+             inkscape:collect="always" />
+          <linearGradient
+             y2="640.92645"
+             x2="338.87704"
+             y1="640.92645"
+             x1="211.53496"
+             gradientTransform="translate(262.5741,-93.22157)"
+             gradientUnits="userSpaceOnUse"
+             id="linearGradient9083"
+             xlink:href="#linearGradient9055"
+             inkscape:collect="always" />
+          <linearGradient
+             y2="902.51355"
+             x2="95.183273"
+             y1="799.13434"
+             x1="95.595039"
+             gradientTransform="translate(437.6096,6.639995)"
+             gradientUnits="userSpaceOnUse"
+             id="linearGradient9089"
+             xlink:href="#linearGradient5211"
+             inkscape:collect="always" />
+          <linearGradient
+             gradientTransform="translate(1.021922,-209.3233)"
+             y2="902.51355"
+             x2="95.183273"
+             y1="799.13434"
+             x1="95.595039"
+             gradientUnits="userSpaceOnUse"
+             id="linearGradient10938"
+             xlink:href="#linearGradient5211"
+             inkscape:collect="always" />
+          <linearGradient
+             gradientTransform="matrix(0.20911582,0,0,0.20911582,164.65131,291.769)"
+             y2="902.51355"
+             x2="95.183273"
+             y1="799.13434"
+             x1="95.595039"
+             gradientUnits="userSpaceOnUse"
+             id="linearGradient2292"
+             xlink:href="#linearGradient5211"
+             inkscape:collect="always" />
+          <linearGradient
+             gradientTransform="matrix(0.20911582,0,0,0.20911582,164.65131,290.0961)"
+             y2="801.67975"
+             x2="94.460098"
+             y1="699.67383"
+             x1="94.32254"
+             gradientUnits="userSpaceOnUse"
+             id="linearGradient2294"
+             xlink:href="#linearGradient5211"
+             inkscape:collect="always" />
+          <linearGradient
+             inkscape:collect="always"
+             xlink:href="#linearGradient5211"
+             id="linearGradient2111"
+             gradientUnits="userSpaceOnUse"
+             gradientTransform="translate(450.342,-621.7315)"
+             x1="95.595039"
+             y1="799.13434"
+             x2="95.183273"
+             y2="902.51355" />
+          <linearGradient
+             inkscape:collect="always"
+             xlink:href="#linearGradient5211"
+             id="linearGradient2113"
+             gradientUnits="userSpaceOnUse"
+             gradientTransform="translate(450.342,-629.7315)"
+             x1="94.32254"
+             y1="699.67383"
+             x2="94.460098"
+             y2="801.67975" />
+        </defs>
+        <sodipodi:namedview
+           inkscape:window-y="0"
+           inkscape:window-x="69"
+           inkscape:window-height="778"
+           inkscape:window-width="1280"
+           inkscape:current-layer="layer2"
+           inkscape:document-units="px"
+           inkscape:cy="41.648155"
+           inkscape:cx="61.48606"
+           inkscape:zoom="5.6568542"
+           inkscape:pageshadow="2"
+           inkscape:pageopacity="0.0"
+           borderopacity="1.0"
+           bordercolor="#666666"
+           pagecolor="#ffffff"
+           id="base"
+           showgrid="false"
+           fit-margin-top="0"
+           fit-margin-left="2.5"
+           fit-margin-right="2.5"
+           fit-margin-bottom="0"
+           inkscape:window-maximized="0" />
+        <metadata
+           id="metadata4">
+          <rdf:RDF>
+            <cc:Work
+               rdf:about="">
+              <dc:format>image/svg+xml</dc:format>
+              <dc:type
+                 rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+            </cc:Work>
+          </rdf:RDF>
+        </metadata>
+        <g
+           inkscape:groupmode="layer"
+           id="layer2"
+           inkscape:label="shadow"
+           transform="translate(-161.4375,-434.625)">
+          <path
+             style="opacity:0.28021976;fill:#000000;fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.67292619;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1"
+             d="m 183.42323,439.27253 c -11.82905,-0.0311 -16.79461,7.28721 -16.79461,10.45579 0,3.16858 4.96558,10.42672 16.79461,10.45579 11.61858,0.0283 16.79461,-8.44959 16.79461,-8.44959 l 8.23393,8.44959 0,-20.91158 -8.33849,8.24047 c 0,0 -4.96586,-8.20989 -16.69005,-8.24047 z m -16.7554,22.76095 0,20.91157 8.23393,-8.44958 c 0,0 5.17603,8.47789 16.79461,8.44958 11.82903,-0.0291 16.79461,-7.2872 16.79461,-10.45578 0,-3.16859 -4.96556,-10.48692 -16.79461,-10.45579 -11.72419,0.0306 -16.69005,8.24046 -16.69005,8.24046 l -8.33849,-8.24046 z"
+             id="path2103"
+             inkscape:export-filename="C:\Documents and Settings\Taka\デスクトップ\path2290.png"
+             inkscape:export-xdpi="90.000000"
+             inkscape:export-ydpi="90.000000"
+             inkscape:connector-curvature="0" />
+        </g>
+        <g
+           id="layer1"
+           inkscape:groupmode="layer"
+           inkscape:label="Layer 1"
+           transform="translate(-161.4375,-434.625)">
+          <path
+             sodipodi:nodetypes="ccccsssc"
+             id="path2284"
+             d="m 198.25103,444.85647 8.34393,-8.23832 0,20.91264 -8.23831,-8.44955 c 0,0 -5.17491,8.47785 -16.79349,8.44955 -11.82903,-0.0291 -16.79349,-7.28773 -16.79349,-10.45632 0,-3.16858 4.96444,-10.48744 16.79349,-10.45632 11.72419,0.0306 16.68787,8.23832 16.68787,8.23832 z"
+             style="fill:url(#linearGradient2294);fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.67292619;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1"
+             inkscape:export-filename="C:\Documents and Settings\Taka\デスクトップ\path2290.png"
+             inkscape:export-xdpi="90.000000"
+             inkscape:export-ydpi="90.000000"
+             inkscape:connector-curvature="0" />
+          <path
+             transform="matrix(0.24274432,0,0,0.24274432,163.18802,244.60685)"
+             d="m 46.972093,834.16925 c 0,5.57892 -4.522607,10.10153 -10.101526,10.10153 -5.578918,0 -10.101525,-4.52261 -10.101525,-10.10153 0,-5.57892 4.522607,-10.10152 10.101525,-10.10152 5.578919,0 10.101526,4.5226 10.101526,10.10152 z"
+             sodipodi:ry="10.101525"
+             sodipodi:rx="10.101525"
+             sodipodi:cy="834.16925"
+             sodipodi:cx="36.870567"
+             id="path2286"
+             style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:2;stroke-miterlimit:4;stroke-opacity:1;stroke-dashoffset:0"
+             sodipodi:type="arc"
+             inkscape:export-filename="C:\Documents and Settings\Taka\デスクトップ\path2290.png"
+             inkscape:export-xdpi="90.000000"
+             inkscape:export-ydpi="90.000000" />
+          <path
+             sodipodi:nodetypes="ccccsssc"
+             id="path2288"
+             d="m 173.14996,467.61533 -8.34393,-8.23831 0,20.91263 8.23831,-8.44954 c 0,0 5.17491,8.47785 16.79349,8.44954 11.82902,-0.0291 16.79349,-7.28773 16.79349,-10.45631 0,-3.16858 -4.96445,-10.48745 -16.79349,-10.45632 -11.72419,0.0306 -16.68787,8.23831 -16.68787,8.23831 z"
+             style="fill:url(#linearGradient2292);fill-opacity:1;fill-rule:evenodd;stroke:#000000;stroke-width:1.67292619;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1"
+             inkscape:export-filename="C:\Documents and Settings\Taka\デスクトップ\path2290.png"
+             inkscape:export-xdpi="90.000000"
+             inkscape:export-ydpi="90.000000"
+             inkscape:connector-curvature="0" />
+          <path
+             id="path2290"
+             d="m 195.70241,469.16032 c 0,0 1.01054,3.04406 3.099,3.04406 2.08846,0 3.03164,-3.10149 3.03164,-3.10149"
+             style="fill:none;stroke:#000000;stroke-width:1.67292619;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1"
+             inkscape:export-xdpi="90.000000"
+             inkscape:export-ydpi="90.000000"
+             inkscape:connector-curvature="0" />
+        </g>
+      </svg>
+      Powered by Kirikiri SDL2
+    </a>
+
+    <div class="spinner" id='spinner'></div>
+    <div class="emscripten" id="status">Downloading...</div>
+
+    <div class="emscripten">
+      <progress value="0" max="100" id="progress" hidden=1></progress>
+    </div>
+
+    
+    <div class="emscripten_border">
+      <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex=-1></canvas>
+    </div>
+    <textarea id="output" rows="8"></textarea>
+
+    <script type='text/javascript'>
+      var statusElement = document.getElementById('status');
+      var progressElement = document.getElementById('progress');
+      var spinnerElement = document.getElementById('spinner');
+
+      var Module = {
+        arguments: ['/data.xp3'],
+        preRun: [],
+        postRun: [],
+        print: (function() {
+          var element = document.getElementById('output');
+          if (element) element.value = ''; // clear browser cache
+          return function(text) {
+            if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+            // These replacements are necessary if you render to raw HTML
+            //text = text.replace(/&/g, "&amp;");
+            //text = text.replace(/</g, "&lt;");
+            //text = text.replace(/>/g, "&gt;");
+            //text = text.replace('\n', '<br>', 'g');
+            console.log(text);
+            if (element) {
+              element.value += text + "\n";
+              element.scrollTop = element.scrollHeight; // focus on bottom
+            }
+          };
+        })(),
+        printErr: function(text) {
+          if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+          console.error(text);
+        },
+        canvas: (function() {
+          var canvas = document.getElementById('canvas');
+
+          // As a default initial behavior, pop up an alert when webgl context is lost. To make your
+          // application robust, you may want to override this behavior before shipping!
+          // See http://www.khronos.org/registry/webgl/specs/latest/1.0/#5.15.2
+          canvas.addEventListener("webglcontextlost", function(e) { alert('WebGL context lost. You will need to reload the page.'); e.preventDefault(); }, false);
+
+          return canvas;
+        })(),
+        setStatus: function(text) {
+          if (!Module.setStatus.last) Module.setStatus.last = { time: Date.now(), text: '' };
+          if (text === Module.setStatus.last.text) return;
+          var m = text.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/);
+          var now = Date.now();
+          if (m && now - Module.setStatus.last.time < 30) return; // if this is a progress update, skip it if too soon
+          Module.setStatus.last.time = now;
+          Module.setStatus.last.text = text;
+          if (m) {
+            text = m[1];
+            progressElement.value = parseInt(m[2])*100;
+            progressElement.max = parseInt(m[4])*100;
+            progressElement.hidden = false;
+            spinnerElement.hidden = false;
+          } else {
+            progressElement.value = null;
+            progressElement.max = null;
+            progressElement.hidden = true;
+            if (!text) spinnerElement.style.display = 'none';
+          }
+          statusElement.innerHTML = text;
+        },
+        totalDependencies: 0,
+        monitorRunDependencies: function(left) {
+          this.totalDependencies = Math.max(this.totalDependencies, left);
+          Module.setStatus(left ? 'Preparing... (' + (this.totalDependencies-left) + '/' + this.totalDependencies + ')' : 'All downloads complete.');
+        }
+      };
+      Module.setStatus('Downloading...');
+      window.onerror = function(event) {
+        // TODO: do not warn on ok events like simulating an infinite loop or exitStatus
+        Module.setStatus('Exception thrown, see JavaScript console');
+        spinnerElement.style.display = 'none';
+        Module.setStatus = function(text) {
+          if (text) Module.printErr('[post-exception status] ' + text);
+        };
+      };
+    </script>
+    <script>
+var ASSERTIONS = 1;
+/**
+ * @license
+ * Copyright 2017 The Emscripten Authors
+ * SPDX-License-Identifier: MIT
+ */
+
+function hasPrefix(str, prefix) {
+  return String.prototype.startsWith ?
+      str.startsWith(prefix) :
+      str.indexOf(prefix) === 0;
+}
+
+// Prefix of data URIs emitted by SINGLE_FILE and related options.
+var dataURIPrefix = 'data:application/octet-stream;base64,';
+
+// Indicates whether filename is a base64 data URI.
+function isDataURI(filename) {
+  return hasPrefix(filename, dataURIPrefix);
+}
+
+var fileURIPrefix = "file://";
+
+// Indicates whether filename is delivered via file protocol (as opposed to http/https)
+function isFileURI(filename) {
+  return hasPrefix(filename, fileURIPrefix);
+}
+
+
+// Copied from https://github.com/strophe/strophejs/blob/e06d027/src/polyfills.js#L149
+
+// This code was written by Tyler Akins and has been placed in the
+// public domain.  It would be nice if you left this header intact.
+// Base64 code from Tyler Akins -- http://rumkin.com
+
+/**
+ * Decodes a base64 string.
+ * @param {string} input The string to decode.
+ */
+var decodeBase64 = typeof atob === 'function' ? atob : function (input) {
+  var keyStr = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+
+  var output = '';
+  var chr1, chr2, chr3;
+  var enc1, enc2, enc3, enc4;
+  var i = 0;
+  // remove all characters that are not A-Z, a-z, 0-9, +, /, or =
+  input = input.replace(/[^A-Za-z0-9\+\/\=]/g, '');
+  do {
+    enc1 = keyStr.indexOf(input.charAt(i++));
+    enc2 = keyStr.indexOf(input.charAt(i++));
+    enc3 = keyStr.indexOf(input.charAt(i++));
+    enc4 = keyStr.indexOf(input.charAt(i++));
+
+    chr1 = (enc1 << 2) | (enc2 >> 4);
+    chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
+    chr3 = ((enc3 & 3) << 6) | enc4;
+
+    output = output + String.fromCharCode(chr1);
+
+    if (enc3 !== 64) {
+      output = output + String.fromCharCode(chr2);
+    }
+    if (enc4 !== 64) {
+      output = output + String.fromCharCode(chr3);
+    }
+  } while (i < input.length);
+  return output;
+};
+
+// Converts a string of base64 into a byte array.
+// Throws error on invalid input.
+function intArrayFromBase64(s) {
+  if (typeof ENVIRONMENT_IS_NODE === 'boolean' && ENVIRONMENT_IS_NODE) {
+    var buf;
+    try {
+      // TODO: Update Node.js externs, Closure does not recognize the following Buffer.from()
+      /**@suppress{checkTypes}*/
+      buf = Buffer.from(s, 'base64');
+    } catch (_) {
+      buf = new Buffer(s, 'base64');
+    }
+    return new Uint8Array(buf['buffer'], buf['byteOffset'], buf['byteLength']);
+  }
+
+  try {
+    var decoded = decodeBase64(s);
+    var bytes = new Uint8Array(decoded.length);
+    for (var i = 0 ; i < decoded.length ; ++i) {
+      bytes[i] = decoded.charCodeAt(i);
+    }
+    return bytes;
+  } catch (_) {
+    throw new Error('Converting base64 string to bytes failed.');
+  }
+}
+
+// If filename is a base64 data URI, parses and returns data (Buffer on node,
+// Uint8Array otherwise). If filename is not a base64 data URI, returns undefined.
+function tryParseAsDataURI(filename) {
+  if (!isDataURI(filename)) {
+    return;
+  }
+
+  return intArrayFromBase64(filename.slice(dataURIPrefix.length));
+}
+
+
+/**
+ * @license
+ * Copyright 2017 The Emscripten Authors
+ * SPDX-License-Identifier: MIT
+ */
+
+/** @type {function(string, boolean=, number=)} */
+function intArrayFromString(stringy, dontAddNull, length) {
+  var len = length > 0 ? length : lengthBytesUTF8(stringy)+1;
+  var u8array = new Array(len);
+  var numBytesWritten = stringToUTF8Array(stringy, u8array, 0, u8array.length);
+  if (dontAddNull) u8array.length = numBytesWritten;
+  return u8array;
+}
+
+function intArrayToString(array) {
+  var ret = [];
+  for (var i = 0; i < array.length; i++) {
+    var chr = array[i];
+    if (chr > 0xFF) {
+      if (ASSERTIONS) {
+        assert(false, 'Character code ' + chr + ' (' + String.fromCharCode(chr) + ')  at offset ' + i + ' not in 0x00-0xFF.');
+      }
+      chr &= 0xFF;
+    }
+    ret.push(String.fromCharCode(chr));
+  }
+  return ret.join('');
+}
+
+      // Work-around iframe focus
+      // https://github.com/emscripten-core/emscripten/pull/7631
+      document.getElementById('canvas').addEventListener('mouseenter', function(e) { window.focus() });
+      document.getElementById('canvas').addEventListener('click', function(e) { window.focus() });
+
+      // Work-around chromium autoplay policy
+      // https://github.com/emscripten-core/emscripten/issues/6511
+      // https://github.com/emscripten-ports/SDL2/pull/104
+      function resumeAudio(e) {
+          if (typeof Module === 'undefined'
+              || typeof Module.SDL2 == 'undefined'
+              || typeof Module.SDL2.audioContext == 'undefined')
+              return;
+          if (Module.SDL2.audioContext.state == 'suspended') {
+              Module.SDL2.audioContext.resume();
+          }
+          if (Module.SDL2.audioContext.state == 'running') {
+              document.getElementById('canvas').removeEventListener('click', resumeAudio);
+              document.removeEventListener('keydown', resumeAudio);
+          }
+      }
+      document.getElementById('canvas').addEventListener('click', resumeAudio);
+      document.addEventListener('keydown', resumeAudio);
+
+
+          function loadMainJs() {
+
+          var script = document.createElement('script');
+          script.src = "krkrsdl2.js";
+          document.body.appendChild(script);
+
+          }
+          function runWithXP3() {
+              _GET = {};
+              if (location.search.length > 0) {
+                  location.search.substr(1).split('&').forEach(function(item) {
+                      _GET[item.split("=")[0]] = item.split("=")[1]
+                  });
+              }
+
+              var url = "data.xp3";
+
+              if (_GET['data']) {
+                  if (_GET['data'].match(/^[0-9a-z._-]+$/i)) {
+                      url = _GET['data'];
+                  } else {
+                      throw "XSS is not allowed";
+                  }
+              }
+
+              var xhr = new XMLHttpRequest();
+              xhr.open('GET', url, true);
+              xhr.responseType = 'arraybuffer';
+              xhr.onprogress = function(event) {
+                  var size = -1;
+                  if (event.total) size = event.total;
+                  if (event.loaded) {
+                      if (!xhr.addedTotal) {
+                          xhr.addedTotal = true;
+                          if (!Module.dataFileDownloads) Module.dataFileDownloads = {};
+                          Module.dataFileDownloads[url] = {
+                              loaded: event.loaded,
+                              total: size
+                          };
+                      } else {
+                          Module.dataFileDownloads[url].loaded = event.loaded;
+                      }
+                      var total = 0;
+                      var loaded = 0;
+                      var num = 0;
+                      for (var download in Module.dataFileDownloads) {
+                          var data = Module.dataFileDownloads[download];
+                          total += data.total;
+                          loaded += data.loaded;
+                          num++;
+                      }
+                      total = Math.ceil(total * Module.expectedDataFileDownloads / num);
+                      if (Module['setStatus']) Module['setStatus']('Downloading project... (' + loaded + '/' + total + ')');
+                  } else if (!Module.dataFileDownloads) {
+                      if (Module['setStatus']) Module['setStatus']('Downloading project...');
+                  }
+              };
+              xhr.onerror = function(event) {
+                  console.log(xhr);
+                  console.log(event);
+                  Module.print("Cannot download project archive. Please see the JavaScript console for more information.\n");
+                  if (Module['setStatus']) Module['setStatus']('Project download error!');
+              }
+              xhr.onload = function(event) {
+                  if (xhr.status == 200 || xhr.status == 304 || xhr.status == 206 || (xhr.status == 0 && xhr.response)) {
+                      FS.writeFile('data.xp3', new Uint8Array(xhr.response), {
+                          canOwn: true
+                      });
+                      if (Module['setStatus']) Module['setStatus']('');
+                      Module['removeRunDependency']('data.xp3');
+                  } else {
+                      console.log(xhr);
+                      console.log(event);
+                      Module.print("Error while downloading project at location " + xhr.responseURL +
+                          " : " + xhr.statusText + " (status code " + xhr.status + ")\n");
+                      if (Module['setStatus']) Module['setStatus']('Project download error!');
+                  }
+              };
+              xhr.send(null);
+              FS.mkdir('/libsdl');
+              FS.mkdir('/libsdl/krkrsdl2');
+              FS.mount(IDBFS, {}, '/libsdl/krkrsdl2');
+
+              FS.syncfs(true, function (err) {
+                Module['removeRunDependency']('savedata');
+              });
+
+              Module['addRunDependency']('data.xp3');
+              Module['addRunDependency']('savedata');
+
+          }
+          Module['preRun'].push(runWithXP3);
+
+          if (!window.WebAssembly) {
+            // Current browser does not support WebAssembly, load the .wasm.js JavaScript fallback
+            // before the main JS runtime.
+            var wasm2js = document.createElement('script');
+            wasm2js.src = 'krkrsdl2.wasm.js';
+            wasm2js.onload = loadMainJs;
+            document.body.appendChild(wasm2js);
+          } else {
+            // Current browser supports Wasm, proceed with loading the main JS runtime.
+            loadMainJs();
+          }
+
+</script>
+  </body>
+</html>
+
+
