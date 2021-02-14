@@ -1,10 +1,18 @@
-# 鱧天 for 吉里吉里SDL2
+# 鱧天 for 吉里吉里SDL2 α版
+
+## 重要！！開発中
+
+**安定していません** 
+
+吉里吉里SDL2の仕様調整などにより、動作しなくなる恐れがあります。
+2021/02/14現在、このテンプレートは以下の問題を内包しています。
+
+* Web版の吉里吉里SDL2でセーブができない問題
+* iOS版の吉里吉里SDL2で終了時にクラッシュする問題
 
 ## 概要
 
-鱧天（Handy ADV Modules Template） for 吉里吉里SDL2は、ゲームエンジン吉里吉里SDL2を用いてADVやノベルゲームを作るときの、テンプレートとしてご利用いただけるものです。
-
-もう少し具体的には、KAGをより手軽に使えるようにStudio F# 様が作成し、割といろいろな作品で実際に使用している、便利マクロ集のようなものです。
+鱧天（Handy ADV Modules Template） for 吉里吉里SDL2は、ゲームエンジン「吉里吉里2/吉里吉里Z/吉里吉里SDL2」を用いてADVやノベルゲームを作るときの、テンプレートとしてご利用いただけるものです。
 
 鱧天を使用することにより、次のような機能を比較的手軽にゲームに盛り込むことができます：
 
@@ -16,40 +24,31 @@
 * 目パチをするキャラグラフィック（立ち絵）
 * 閲覧済みイベントCG鑑賞モード
 
-吉里吉里SDL2については、以下のURLをご参照ください。
-https://github.com/uyjulian/krkrsdl2
+オリジナルの鱧天は、吉里吉里2においてKAGをより手軽に使えるようにサークル「Studio F#」様が作成し、割といろいろな作品で実際に使用している、便利マクロ集のようなものです。詳細はREADME_ORIG.mdを参照してください。
 
-***
+この鱧天を「新しい吉里吉里」である「吉里吉里Z」や「吉里吉里SDL2」でも動作するよう配慮して書き換えたものが本テンプレートとなります。
 
-## 配布について
+このテンプレートから吉里吉里Releaserを使用して作られた「data.xp3」は以下の環境でそのまま動作します。
 
-このリポジトリに置かれているのは原則として開発版です。<br>
-まだ本番に使うのはよしたほうが良いかもしれません。
+吉里吉里2
 
-***
+* Windows
 
-## 謝辞
+吉里吉里Z
 
-吉里吉里2の作者であるW.Dee氏、吉里吉里Zの作者であるJin氏、吉里吉里SDL2の作者である
-Julian Uy氏をはじめ、吉里吉里の発展に尽力されているあらゆる方々に敬意を表すると共に、深く感謝申し上げます。<br>
+* Windows
+* Android
 
-また、鱧天では次の吉里吉里プラグインを内部的に利用し、同梱して配布しています：
+吉里吉里SDL2
 
-* ktl_local_files.dll（KTLよりローカルストレージ操作 / &copy;Bolero MURAKAMI）
+* MacOS
+* iOS
+* Web
 
-有用なプラグインを多数作成・公開されているBolero MURAKAMI氏に深く感謝申し上げます。<br>
-KTLに関する最新版等の情報については、 http://www.boleros.x0.com/doc/ktlwiki/index.php?KTLWiki よりご覧ください。
+## TIPS
 
-また、鱧天では次のKAGプラグインを内部的に利用し、同梱して配布しています：
-
-* autoInsertLabel.ks（どこでもセーブプラグイン / 作者不詳）
-
-2015年10月現在、配布元・連絡先を見付けられず、ライセンスが不明な状態で、同梱して良いものかどうか迷ったのですが、大変有用なプラグインであり、またこれが無いと鱧天の一部機能が無効となってしまうため、やむを得ず同梱させていただいております。
-
-作者様にはこの場を借りて深く感謝申し上げます。<br>
-再配布に問題がある場合は、大変お手数ですが、本リポジトリの管理者までご連絡いただければ幸いです。 
-
-***
+Web版吉里吉里SDL2ではDLLを内包しているため、リリース時に/src/data/pluginフォルダの中身は削除できます。
+これにより通信容量が削減できます。もちろん、削除しなくても動きます。
 
 ## ライセンス
 
@@ -61,14 +60,17 @@ KTLに関する最新版等の情報については、 http://www.boleros.x0.com
 
 なお、配布アーカイブに同梱されるもののうち、次に掲げるものの諸権利は原配付者に帰属し、ライセンスも当該権利者の定めるところに従います：
 
-* src/data/pluginフォルダ内のすべてのファイル
-* src/data/systemフォルダ内のすべてのファイル
-* src/data/startup.tjs
-* src/data/scenario/KagPluginsフォルダ内のすべてのファイル（以上、&copy;W.Dee）
-* src/data/sysxmod_novel/_krplugin/ktl_local_files.dll（&copy;Bolero MURAKAMI）
-* src/data/ipag.ttf(IPAexゴシック &copy;独立行政法人 情報処理推進機構)
+* /src/krkrZ.exe
+* /src/krkrZ_dbg.exe（以上、&copy;JIN）
+* /src/krkr2.exe
+* /src/pluginフォルダ内のすべてのファイル
+* /src/data/systemフォルダ内のすべてのファイル
+* /src/data/startup.tjs
+* /src/data/scenario/KagPluginsフォルダ内のすべてのファイル（以上、&copy;W.Dee）
+* /src/data/sysxmod_novel/_krplugin/ktl_local_files.dll（&copy;Bolero MURAKAMI）
+* /src/data/ipag.ttf(IPAexゴシック &copy;独立行政法人 情報処理推進機構)
 
-ただし次に掲げるものについては、2015年10月現在配布元が不明なため、暫定的に鱧天と同等のライセンス的なもの（ただし著作権を除く）を適用するものとします：
+ただし次に掲げるものについては、2021年2月現在配布元が不明なため、暫定的に鱧天と同等のライセンス的なもの（ただし著作権を除く）を適用するものとします：
 
 * /data/scenario/KagPlugins/autoInsertLabel.ks
 
@@ -83,5 +85,8 @@ KTLに関する最新版等の情報については、 http://www.boleros.x0.com
 
 ***
 
-&copy;Studio F#. 
-ぷり@xyx0no646
+&copy;Studio F#.
+
+## テンプレート管理人連絡先
+
+[Twitterアカウント > ぷり@xyx0no646](https://twitter.com/xyx0no646)
