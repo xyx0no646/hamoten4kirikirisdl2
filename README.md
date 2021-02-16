@@ -45,6 +45,12 @@
 * iOS
 * Web
 
+## デモ
+
+Web版のデモです。PWAアプリ化しています。
+
+https://xyx0no646.github.io/hamoten4kirikirisdl2/pwa/
+
 ## TIPS
 
 Web版吉里吉里SDL2ではDLLを内包しているため、リリース時に/src/data/pluginフォルダの中身は削除できます。
