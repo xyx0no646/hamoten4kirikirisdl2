@@ -3,8 +3,9 @@
     "short_name": "鱧天",
     "start_url": "./?pwa=true",
     "display": "standalone",
-    "background_color": "#000",
+    "background_color": "black",
     "description": "鱧天 for 吉里吉里SDL2",
+    "orientation": "portrait-primary",
     "gcm_sender_id": "103953800507",
     "icons": [
         {
