@@ -76,6 +76,10 @@ Web版吉里吉里SDL2ではDLLを内包しているため、リリース時に/
 
 この措置は将来的に権利者が明らかになった段階等に解除されます。
 
+4. PublicフォルダにあるPWAは吉里吉里SDL2のライセンスに準じます。(data.xp3を除く)
+
+吉里吉里SDL2:https://github.com/krkrsdl2/krkrsdl2
+
 ***
 
 ## 免責事項
