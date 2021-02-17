@@ -551,7 +551,7 @@ var ABORT = false;
 // set by exit() and abort().  Passed to 'onExit' handler.
 // NOTE: This is also used as the process return code code in shell environments
 // but only when noExitRuntime is false.
-var EXITSTATUS;
+var EXITSTATUS = 0;
 
 /** @type {function(*, string=)} */
 function assert(condition, text) {
@@ -1082,6 +1082,35 @@ var TOTAL_STACK = 5242880;
 
 var INITIAL_MEMORY = Module['INITIAL_MEMORY'] || 134217728;
 
+// In non-standalone/normal mode, we create the memory here.
+// include: runtime_init_memory.js
+
+
+// Create the main memory. (Note: this isn't used in STANDALONE_WASM mode since the wasm
+// memory is created in the wasm, not in JS.)
+
+  if (Module['wasmMemory']) {
+    wasmMemory = Module['wasmMemory'];
+  } else
+  {
+    wasmMemory = new WebAssembly.Memory({
+      'initial': INITIAL_MEMORY / 65536
+      ,
+      'maximum': 2147483648 / 65536
+    });
+  }
+
+if (wasmMemory) {
+  buffer = wasmMemory.buffer;
+}
+
+// If the user provides an incorrect length, just use that length instead rather than providing the user to
+// specifically provide the memory length with Module['INITIAL_MEMORY'].
+INITIAL_MEMORY = buffer.byteLength;
+updateGlobalBufferAndViews(buffer);
+
+// end include: runtime_init_memory.js
+
 // include: runtime_init_table.js
 // In regular non-RELOCATABLE mode the table is exported
 // from the wasm module and this will be assigned once
@@ -1343,9 +1372,6 @@ function createWasm() {
 
     Module['asm'] = exports;
 
-    wasmMemory = Module['asm']['memory'];
-    updateGlobalBufferAndViews(wasmMemory.buffer);
-
     wasmTable = Module['asm']['__indirect_function_table'];
 
     removeRunDependency('wasm-instantiate');
@@ -1417,25 +1443,25 @@ var tempI64;
 // === Body ===
 
 var ASM_CONSTS = {
-  948120: function($0, $1) {alert(UTF8ToString($0) + "\n\n" + UTF8ToString($1));},  
- 948750: function($0, $1, $2) {var w = $0; var h = $1; var pixels = $2; if (!Module['SDL2']) Module['SDL2'] = {}; var SDL2 = Module['SDL2']; if (SDL2.ctxCanvas !== Module['canvas']) { SDL2.ctx = Module['createContext'](Module['canvas'], false, true); SDL2.ctxCanvas = Module['canvas']; } if (SDL2.w !== w || SDL2.h !== h || SDL2.imageCtx !== SDL2.ctx) { SDL2.image = SDL2.ctx.createImageData(w, h); SDL2.w = w; SDL2.h = h; SDL2.imageCtx = SDL2.ctx; } var data = SDL2.image.data; var src = pixels >> 2; var dst = 0; var num; if (typeof CanvasPixelArray !== 'undefined' && data instanceof CanvasPixelArray) { num = data.length; while (dst < num) { var val = HEAP32[src]; data[dst ] = val & 0xff; data[dst+1] = (val >> 8) & 0xff; data[dst+2] = (val >> 16) & 0xff; data[dst+3] = 0xff; src++; dst += 4; } } else { if (SDL2.data32Data !== data) { SDL2.data32 = new Int32Array(data.buffer); SDL2.data8 = new Uint8Array(data.buffer); } var data32 = SDL2.data32; num = data32.length; data32.set(HEAP32.subarray(src, src + num)); var data8 = SDL2.data8; var i = 3; var j = i + 4*num; if (num % 8 == 0) { while (i < j) { data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; } } else { while (i < j) { data8[i] = 0xff; i = i + 4 | 0; } } } SDL2.ctx.putImageData(SDL2.image, 0, 0); return 0;},  
- 951418: function($0) {if (Module['canvas']) { Module['canvas'].style['cursor'] = UTF8ToString($0); } return 0;},  
- 951511: function() {if (Module['canvas']) { Module['canvas'].style['cursor'] = 'none'; }},  
- 951580: function($0, $1, $2, $3, $4) {var w = $0; var h = $1; var hot_x = $2; var hot_y = $3; var pixels = $4; var canvas = document.createElement("canvas"); canvas.width = w; canvas.height = h; var ctx = canvas.getContext("2d"); var image = ctx.createImageData(w, h); var data = image.data; var src = pixels >> 2; var dst = 0; var num; if (typeof CanvasPixelArray !== 'undefined' && data instanceof CanvasPixelArray) { num = data.length; while (dst < num) { var val = HEAP32[src]; data[dst ] = val & 0xff; data[dst+1] = (val >> 8) & 0xff; data[dst+2] = (val >> 16) & 0xff; data[dst+3] = (val >> 24) & 0xff; src++; dst += 4; } } else { var data32 = new Int32Array(data.buffer); num = data32.length; data32.set(HEAP32.subarray(src, src + num)); } ctx.putImageData(image, 0, 0); var url = hot_x === 0 && hot_y === 0 ? "url(" + canvas.toDataURL() + "), auto" : "url(" + canvas.toDataURL() + ") " + hot_x + " " + hot_y + ", auto"; var urlBuf = _malloc(url.length + 1); stringToUTF8(url, urlBuf, url.length + 1); return urlBuf;},  
- 953535: function($0) {if (typeof setWindowTitle !== 'undefined') { setWindowTitle(UTF8ToString($0)); } return 0;},  
- 953667: function() {return window.innerWidth;},  
- 953699: function() {return window.innerHeight;},  
- 953732: function() {return screen.width;},  
- 953759: function() {return screen.height;},  
- 953826: function() {if (typeof(AudioContext) !== 'undefined') { return 1; } else if (typeof(webkitAudioContext) !== 'undefined') { return 1; } return 0;},  
- 953992: function() {if ((typeof(navigator.mediaDevices) !== 'undefined') && (typeof(navigator.mediaDevices.getUserMedia) !== 'undefined')) { return 1; } else if (typeof(navigator.webkitGetUserMedia) !== 'undefined') { return 1; } return 0;},  
- 954218: function($0) {var SDL2 = Module['SDL2']; if ($0) { if (SDL2.capture.silenceTimer !== undefined) { clearTimeout(SDL2.capture.silenceTimer); } if (SDL2.capture.stream !== undefined) { var tracks = SDL2.capture.stream.getAudioTracks(); for (var i = 0; i < tracks.length; i++) { SDL2.capture.stream.removeTrack(tracks[i]); } SDL2.capture.stream = undefined; } if (SDL2.capture.scriptProcessorNode !== undefined) { SDL2.capture.scriptProcessorNode.onaudioprocess = function(audioProcessingEvent) {}; SDL2.capture.scriptProcessorNode.disconnect(); SDL2.capture.scriptProcessorNode = undefined; } if (SDL2.capture.mediaStreamNode !== undefined) { SDL2.capture.mediaStreamNode.disconnect(); SDL2.capture.mediaStreamNode = undefined; } if (SDL2.capture.silenceBuffer !== undefined) { SDL2.capture.silenceBuffer = undefined } SDL2.capture = undefined; } else { if (SDL2.audio.scriptProcessorNode != undefined) { SDL2.audio.scriptProcessorNode.disconnect(); SDL2.audio.scriptProcessorNode = undefined; } SDL2.audio = undefined; } if ((SDL2.audioContext !== undefined) && (SDL2.audio === undefined) && (SDL2.capture === undefined)) { SDL2.audioContext.close(); SDL2.audioContext = undefined; }},  
- 955390: function($0) {if(typeof(Module['SDL2']) === 'undefined') { Module['SDL2'] = {}; } var SDL2 = Module['SDL2']; if (!$0) { SDL2.audio = {}; } else { SDL2.capture = {}; } if (!SDL2.audioContext) { if (typeof(AudioContext) !== 'undefined') { SDL2.audioContext = new AudioContext(); } else if (typeof(webkitAudioContext) !== 'undefined') { SDL2.audioContext = new webkitAudioContext(); } if (SDL2.audioContext) { autoResumeAudioContext(SDL2.audioContext); } } return SDL2.audioContext === undefined ? -1 : 0;},  
- 955943: function() {var SDL2 = Module['SDL2']; return SDL2.audioContext.sampleRate;},  
- 956013: function($0, $1, $2, $3) {var SDL2 = Module['SDL2']; var have_microphone = function(stream) { if (SDL2.capture.silenceTimer !== undefined) { clearTimeout(SDL2.capture.silenceTimer); SDL2.capture.silenceTimer = undefined; } SDL2.capture.mediaStreamNode = SDL2.audioContext.createMediaStreamSource(stream); SDL2.capture.scriptProcessorNode = SDL2.audioContext.createScriptProcessor($1, $0, 1); SDL2.capture.scriptProcessorNode.onaudioprocess = function(audioProcessingEvent) { if ((SDL2 === undefined) || (SDL2.capture === undefined)) { return; } audioProcessingEvent.outputBuffer.getChannelData(0).fill(0.0); SDL2.capture.currentCaptureBuffer = audioProcessingEvent.inputBuffer; dynCall('vi', $2, [$3]); }; SDL2.capture.mediaStreamNode.connect(SDL2.capture.scriptProcessorNode); SDL2.capture.scriptProcessorNode.connect(SDL2.audioContext.destination); SDL2.capture.stream = stream; }; var no_microphone = function(error) { }; SDL2.capture.silenceBuffer = SDL2.audioContext.createBuffer($0, $1, SDL2.audioContext.sampleRate); SDL2.capture.silenceBuffer.getChannelData(0).fill(0.0); var silence_callback = function() { SDL2.capture.currentCaptureBuffer = SDL2.capture.silenceBuffer; dynCall('vi', $2, [$3]); }; SDL2.capture.silenceTimer = setTimeout(silence_callback, ($1 / SDL2.audioContext.sampleRate) * 1000); if ((navigator.mediaDevices !== undefined) && (navigator.mediaDevices.getUserMedia !== undefined)) { navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(have_microphone).catch(no_microphone); } else if (navigator.webkitGetUserMedia !== undefined) { navigator.webkitGetUserMedia({ audio: true, video: false }, have_microphone, no_microphone); }},  
- 957665: function($0, $1, $2, $3) {var SDL2 = Module['SDL2']; SDL2.audio.scriptProcessorNode = SDL2.audioContext['createScriptProcessor']($1, 0, $0); SDL2.audio.scriptProcessorNode['onaudioprocess'] = function (e) { if ((SDL2 === undefined) || (SDL2.audio === undefined)) { return; } SDL2.audio.currentOutputBuffer = e['outputBuffer']; dynCall('vi', $2, [$3]); }; SDL2.audio.scriptProcessorNode['connect'](SDL2.audioContext['destination']);},  
- 958075: function($0, $1) {var SDL2 = Module['SDL2']; var numChannels = SDL2.audio.currentOutputBuffer['numberOfChannels']; for (var c = 0; c < numChannels; ++c) { var channelData = SDL2.audio.currentOutputBuffer['getChannelData'](c); if (channelData.length != $1) { throw 'Web Audio output buffer length mismatch! Destination size: ' + channelData.length + ' samples vs expected ' + $1 + ' samples!'; } for (var j = 0; j < $1; ++j) { channelData[j] = HEAPF32[$0 + ((j*numChannels + c) << 2) >> 2]; } }},  
- 958555: function($0, $1) {var SDL2 = Module['SDL2']; var numChannels = SDL2.capture.currentCaptureBuffer.numberOfChannels; for (var c = 0; c < numChannels; ++c) { var channelData = SDL2.capture.currentCaptureBuffer.getChannelData(c); if (channelData.length != $1) { throw 'Web Audio capture buffer length mismatch! Destination size: ' + channelData.length + ' samples vs expected ' + $1 + ' samples!'; } if (numChannels == 1) { for (var j = 0; j < $1; ++j) { setValue($0 + (j * 4), channelData[j], 'float'); } } else { for (var j = 0; j < $1; ++j) { setValue($0 + (((j * numChannels) + c) * 4), channelData[j], 'float'); } } }}
+  968004: function($0, $1) {alert(UTF8ToString($0) + "\n\n" + UTF8ToString($1));},  
+ 970252: function($0, $1, $2) {var w = $0; var h = $1; var pixels = $2; if (!Module['SDL2']) Module['SDL2'] = {}; var SDL2 = Module['SDL2']; if (SDL2.ctxCanvas !== Module['canvas']) { SDL2.ctx = Module['createContext'](Module['canvas'], false, true); SDL2.ctxCanvas = Module['canvas']; } if (SDL2.w !== w || SDL2.h !== h || SDL2.imageCtx !== SDL2.ctx) { SDL2.image = SDL2.ctx.createImageData(w, h); SDL2.w = w; SDL2.h = h; SDL2.imageCtx = SDL2.ctx; } var data = SDL2.image.data; var src = pixels >> 2; var dst = 0; var num; if (typeof CanvasPixelArray !== 'undefined' && data instanceof CanvasPixelArray) { num = data.length; while (dst < num) { var val = HEAP32[src]; data[dst ] = val & 0xff; data[dst+1] = (val >> 8) & 0xff; data[dst+2] = (val >> 16) & 0xff; data[dst+3] = 0xff; src++; dst += 4; } } else { if (SDL2.data32Data !== data) { SDL2.data32 = new Int32Array(data.buffer); SDL2.data8 = new Uint8Array(data.buffer); } var data32 = SDL2.data32; num = data32.length; data32.set(HEAP32.subarray(src, src + num)); var data8 = SDL2.data8; var i = 3; var j = i + 4*num; if (num % 8 == 0) { while (i < j) { data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; } } else { while (i < j) { data8[i] = 0xff; i = i + 4 | 0; } } } SDL2.ctx.putImageData(SDL2.image, 0, 0); return 0;},  
+ 971731: function($0, $1, $2, $3, $4) {var w = $0; var h = $1; var hot_x = $2; var hot_y = $3; var pixels = $4; var canvas = document.createElement("canvas"); canvas.width = w; canvas.height = h; var ctx = canvas.getContext("2d"); var image = ctx.createImageData(w, h); var data = image.data; var src = pixels >> 2; var dst = 0; var num; if (typeof CanvasPixelArray !== 'undefined' && data instanceof CanvasPixelArray) { num = data.length; while (dst < num) { var val = HEAP32[src]; data[dst ] = val & 0xff; data[dst+1] = (val >> 8) & 0xff; data[dst+2] = (val >> 16) & 0xff; data[dst+3] = (val >> 24) & 0xff; src++; dst += 4; } } else { var data32 = new Int32Array(data.buffer); num = data32.length; data32.set(HEAP32.subarray(src, src + num)); } ctx.putImageData(image, 0, 0); var url = hot_x === 0 && hot_y === 0 ? "url(" + canvas.toDataURL() + "), auto" : "url(" + canvas.toDataURL() + ") " + hot_x + " " + hot_y + ", auto"; var urlBuf = _malloc(url.length + 1); stringToUTF8(url, urlBuf, url.length + 1); return urlBuf;},  
+ 972720: function($0) {if (Module['canvas']) { Module['canvas'].style['cursor'] = UTF8ToString($0); } return 0;},  
+ 972813: function() {if (Module['canvas']) { Module['canvas'].style['cursor'] = 'none'; }},  
+ 974038: function() {return screen.width;},  
+ 974065: function() {return screen.height;},  
+ 974093: function() {return window.innerWidth;},  
+ 974125: function() {return window.innerHeight;},  
+ 974203: function($0) {if (typeof setWindowTitle !== 'undefined') { setWindowTitle(UTF8ToString($0)); } return 0;},  
+ 974337: function() {if (typeof(AudioContext) !== 'undefined') { return 1; } else if (typeof(webkitAudioContext) !== 'undefined') { return 1; } return 0;},  
+ 974503: function() {if ((typeof(navigator.mediaDevices) !== 'undefined') && (typeof(navigator.mediaDevices.getUserMedia) !== 'undefined')) { return 1; } else if (typeof(navigator.webkitGetUserMedia) !== 'undefined') { return 1; } return 0;},  
+ 974729: function($0) {if(typeof(Module['SDL2']) === 'undefined') { Module['SDL2'] = {}; } var SDL2 = Module['SDL2']; if (!$0) { SDL2.audio = {}; } else { SDL2.capture = {}; } if (!SDL2.audioContext) { if (typeof(AudioContext) !== 'undefined') { SDL2.audioContext = new AudioContext(); } else if (typeof(webkitAudioContext) !== 'undefined') { SDL2.audioContext = new webkitAudioContext(); } if (SDL2.audioContext) { autoResumeAudioContext(SDL2.audioContext); } } return SDL2.audioContext === undefined ? -1 : 0;},  
+ 975282: function() {var SDL2 = Module['SDL2']; return SDL2.audioContext.sampleRate;},  
+ 975352: function($0, $1, $2, $3) {var SDL2 = Module['SDL2']; var have_microphone = function(stream) { if (SDL2.capture.silenceTimer !== undefined) { clearTimeout(SDL2.capture.silenceTimer); SDL2.capture.silenceTimer = undefined; } SDL2.capture.mediaStreamNode = SDL2.audioContext.createMediaStreamSource(stream); SDL2.capture.scriptProcessorNode = SDL2.audioContext.createScriptProcessor($1, $0, 1); SDL2.capture.scriptProcessorNode.onaudioprocess = function(audioProcessingEvent) { if ((SDL2 === undefined) || (SDL2.capture === undefined)) { return; } audioProcessingEvent.outputBuffer.getChannelData(0).fill(0.0); SDL2.capture.currentCaptureBuffer = audioProcessingEvent.inputBuffer; dynCall('vi', $2, [$3]); }; SDL2.capture.mediaStreamNode.connect(SDL2.capture.scriptProcessorNode); SDL2.capture.scriptProcessorNode.connect(SDL2.audioContext.destination); SDL2.capture.stream = stream; }; var no_microphone = function(error) { }; SDL2.capture.silenceBuffer = SDL2.audioContext.createBuffer($0, $1, SDL2.audioContext.sampleRate); SDL2.capture.silenceBuffer.getChannelData(0).fill(0.0); var silence_callback = function() { SDL2.capture.currentCaptureBuffer = SDL2.capture.silenceBuffer; dynCall('vi', $2, [$3]); }; SDL2.capture.silenceTimer = setTimeout(silence_callback, ($1 / SDL2.audioContext.sampleRate) * 1000); if ((navigator.mediaDevices !== undefined) && (navigator.mediaDevices.getUserMedia !== undefined)) { navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(have_microphone).catch(no_microphone); } else if (navigator.webkitGetUserMedia !== undefined) { navigator.webkitGetUserMedia({ audio: true, video: false }, have_microphone, no_microphone); }},  
+ 977004: function($0, $1, $2, $3) {var SDL2 = Module['SDL2']; SDL2.audio.scriptProcessorNode = SDL2.audioContext['createScriptProcessor']($1, 0, $0); SDL2.audio.scriptProcessorNode['onaudioprocess'] = function (e) { if ((SDL2 === undefined) || (SDL2.audio === undefined)) { return; } SDL2.audio.currentOutputBuffer = e['outputBuffer']; dynCall('vi', $2, [$3]); }; SDL2.audio.scriptProcessorNode['connect'](SDL2.audioContext['destination']);},  
+ 977414: function($0, $1) {var SDL2 = Module['SDL2']; var numChannels = SDL2.capture.currentCaptureBuffer.numberOfChannels; for (var c = 0; c < numChannels; ++c) { var channelData = SDL2.capture.currentCaptureBuffer.getChannelData(c); if (channelData.length != $1) { throw 'Web Audio capture buffer length mismatch! Destination size: ' + channelData.length + ' samples vs expected ' + $1 + ' samples!'; } if (numChannels == 1) { for (var j = 0; j < $1; ++j) { setValue($0 + (j * 4), channelData[j], 'float'); } } else { for (var j = 0; j < $1; ++j) { setValue($0 + (((j * numChannels) + c) * 4), channelData[j], 'float'); } } }},  
+ 978019: function($0, $1) {var SDL2 = Module['SDL2']; var numChannels = SDL2.audio.currentOutputBuffer['numberOfChannels']; for (var c = 0; c < numChannels; ++c) { var channelData = SDL2.audio.currentOutputBuffer['getChannelData'](c); if (channelData.length != $1) { throw 'Web Audio output buffer length mismatch! Destination size: ' + channelData.length + ' samples vs expected ' + $1 + ' samples!'; } for (var j = 0; j < $1; ++j) { channelData[j] = HEAPF32[$0 + ((j*numChannels + c) << 2) >> 2]; } }},  
+ 978499: function($0) {var SDL2 = Module['SDL2']; if ($0) { if (SDL2.capture.silenceTimer !== undefined) { clearTimeout(SDL2.capture.silenceTimer); } if (SDL2.capture.stream !== undefined) { var tracks = SDL2.capture.stream.getAudioTracks(); for (var i = 0; i < tracks.length; i++) { SDL2.capture.stream.removeTrack(tracks[i]); } SDL2.capture.stream = undefined; } if (SDL2.capture.scriptProcessorNode !== undefined) { SDL2.capture.scriptProcessorNode.onaudioprocess = function(audioProcessingEvent) {}; SDL2.capture.scriptProcessorNode.disconnect(); SDL2.capture.scriptProcessorNode = undefined; } if (SDL2.capture.mediaStreamNode !== undefined) { SDL2.capture.mediaStreamNode.disconnect(); SDL2.capture.mediaStreamNode = undefined; } if (SDL2.capture.silenceBuffer !== undefined) { SDL2.capture.silenceBuffer = undefined } SDL2.capture = undefined; } else { if (SDL2.audio.scriptProcessorNode != undefined) { SDL2.audio.scriptProcessorNode.disconnect(); SDL2.audio.scriptProcessorNode = undefined; } SDL2.audio = undefined; } if ((SDL2.audioContext !== undefined) && (SDL2.audio === undefined) && (SDL2.capture === undefined)) { SDL2.audioContext.close(); SDL2.audioContext = undefined; }}
 };
 
 
@@ -4199,7 +4225,7 @@ var ASM_CONSTS = {
         });
         FS.mkdev('/dev/null', FS.makedev(1, 3));
         // setup /dev/tty and /dev/tty1
-        // stderr needs to print output using err() rather than out()
+        // stderr needs to print output using Module['printErr']
         // so we register a second tty just for it.
         TTY.register(FS.makedev(5, 0), TTY.default_tty_ops);
         TTY.register(FS.makedev(6, 0), TTY.default_tty1_ops);
@@ -5037,6 +5063,16 @@ var ASM_CONSTS = {
         }
         default: abort('bad ioctl syscall ' + op);
       }
+    } catch (e) {
+    if (typeof FS === 'undefined' || !(e instanceof FS.ErrnoError)) abort(e);
+    return -e.errno;
+  }
+  }
+
+  function ___sys_lstat64(path, buf) {try {
+  
+      path = SYSCALLS.getStr(path);
+      return SYSCALLS.doStat(FS.lstat, path, buf);
     } catch (e) {
     if (typeof FS === 'undefined' || !(e instanceof FS.ErrnoError)) abort(e);
     return -e.errno;
@@ -7142,13 +7178,41 @@ var ASM_CONSTS = {
         GLctx.disjointTimerQueryExt = GLctx.getExtension("EXT_disjoint_timer_query");
         __webgl_enable_WEBGL_multi_draw(GLctx);
   
-        // .getSupportedExtensions() can return null if context is lost, so coerce to empty array.
-        var exts = GLctx.getSupportedExtensions() || [];
+        // These are the 'safe' feature-enabling extensions that don't add any performance impact related to e.g. debugging, and
+        // should be enabled by default so that client GLES2/GL code will not need to go through extra hoops to get its stuff working.
+        // As new extensions are ratified at http://www.khronos.org/registry/webgl/extensions/ , feel free to add your new extensions
+        // here, as long as they don't produce a performance impact for users that might not be using those extensions.
+        // E.g. debugging-related extensions should probably be off by default.
+        var automaticallyEnabledExtensions = [ // Khronos ratified WebGL extensions ordered by number (no debug extensions):
+                                               "OES_texture_float", "OES_texture_half_float", "OES_standard_derivatives",
+                                               "OES_vertex_array_object", "WEBGL_compressed_texture_s3tc", "WEBGL_depth_texture",
+                                               "OES_element_index_uint", "EXT_texture_filter_anisotropic", "EXT_frag_depth",
+                                               "WEBGL_draw_buffers", "ANGLE_instanced_arrays", "OES_texture_float_linear",
+                                               "OES_texture_half_float_linear", "EXT_blend_minmax", "EXT_shader_texture_lod",
+                                               "EXT_texture_norm16",
+                                               // Community approved WebGL extensions ordered by number:
+                                               "WEBGL_compressed_texture_pvrtc", "EXT_color_buffer_half_float", "WEBGL_color_buffer_float",
+                                               "EXT_sRGB", "WEBGL_compressed_texture_etc1", "EXT_disjoint_timer_query",
+                                               "WEBGL_compressed_texture_etc", "WEBGL_compressed_texture_astc", "EXT_color_buffer_float",
+                                               "WEBGL_compressed_texture_s3tc_srgb", "EXT_disjoint_timer_query_webgl2",
+                                               // Old style prefixed forms of extensions (but still currently used on e.g. iPhone Xs as
+                                               // tested on iOS 12.4.1):
+                                               "WEBKIT_WEBGL_compressed_texture_pvrtc"];
+  
+        function shouldEnableAutomatically(extension) {
+          var ret = false;
+          automaticallyEnabledExtensions.forEach(function(include) {
+            if (extension.indexOf(include) != -1) {
+              ret = true;
+            }
+          });
+          return ret;
+        }
+  
+        var exts = GLctx.getSupportedExtensions() || []; // .getSupportedExtensions() can return null if context is lost, so coerce to empty array.
         exts.forEach(function(ext) {
-          // WEBGL_lose_context, WEBGL_debug_renderer_info and WEBGL_debug_shaders are not enabled by default.
-          if (ext.indexOf('lose_context') < 0 && ext.indexOf('debug') < 0) {
-            // Call .getExtension() to enable that extension permanently.
-            GLctx.getExtension(ext);
+          if (automaticallyEnabledExtensions.indexOf(ext) != -1) {
+            GLctx.getExtension(ext); // Calling .getExtension enables that extension permanently, no need to store the return value to be enabled.
           }
         });
       },populateUniformTable:function(program) {
@@ -9859,7 +9923,7 @@ var ASM_CONSTS = {
 
   /** @param {number|boolean=} noSetTiming */
   function _emscripten_set_main_loop(func, fps, simulateInfiniteLoop, arg, noSetTiming) {
-      var browserIterationFunc = wasmTable.get(func);
+      var browserIterationFunc = function() { wasmTable.get(func)(); };
       setMainLoop(browserIterationFunc, fps, simulateInfiniteLoop, arg, noSetTiming);
     }
 
@@ -10193,13 +10257,6 @@ var ASM_CONSTS = {
       throw 'Please compile your program with async support in order to use asynchronous operations like emscripten_sleep';
     }
 
-  function _emscripten_thread_sleep(msecs) {
-      var start = _emscripten_get_now();
-      while (_emscripten_get_now() - start < msecs) {
-        // Do nothing.
-      }
-    }
-
   var ENV={};
   
   function getExecutableName() {
@@ -10383,6 +10440,34 @@ var ASM_CONSTS = {
       HEAP32[(((tmPtr)+(16))>>2)]=date.getMonth();
   
       return (date.getTime() / 1000)|0;
+    }
+
+  function _usleep(useconds) {
+      // int usleep(useconds_t useconds);
+      // http://pubs.opengroup.org/onlinepubs/000095399/functions/usleep.html
+      // We're single-threaded, so use a busy loop. Super-ugly.
+      var start = _emscripten_get_now();
+      while (_emscripten_get_now() - start < useconds / 1000) {
+        // Do nothing.
+      }
+    }
+  function _nanosleep(rqtp, rmtp) {
+      // int nanosleep(const struct timespec  *rqtp, struct timespec *rmtp);
+      if (rqtp === 0) {
+        setErrNo(28);
+        return -1;
+      }
+      var seconds = HEAP32[((rqtp)>>2)];
+      var nanoseconds = HEAP32[(((rqtp)+(4))>>2)];
+      if (nanoseconds < 0 || nanoseconds > 999999999 || seconds < 0) {
+        setErrNo(28);
+        return -1;
+      }
+      if (rmtp !== 0) {
+        HEAP32[((rmtp)>>2)]=0;
+        HEAP32[(((rmtp)+(4))>>2)]=0;
+      }
+      return _usleep((seconds * 1e6) + (nanoseconds / 1000));
     }
 
   function _setTempRet0($i) {
@@ -10773,6 +10858,32 @@ var ASM_CONSTS = {
       return ret;
     }
 
+  function setFileTime(path, time) {
+      path = UTF8ToString(path);
+      try {
+        FS.utime(path, time, time);
+        return 0;
+      } catch (e) {
+        if (!(e instanceof FS.ErrnoError)) throw e + ' : ' + stackTrace();
+        setErrNo(e.errno);
+        return -1;
+      }
+    }
+  function _utimes(path, times) {
+      // utimes is just like utime but take an array of 2 times: `struct timeval times[2]`
+      // times[0] is the new access time (which we currently ignore)
+      // times[1] is the new modification time.
+      var time;
+      if (times) {
+        var mtime = times + 8;
+        time = HEAP32[((mtime)>>2)] * 1000;
+        time += HEAP32[(((mtime)+(4))>>2)] / 1000;
+      } else {
+        time = Date.now();
+      }
+      return setFileTime(path, time);
+    }
+
   var readAsmConstArgsArray=[];
   function readAsmConstArgs(sigPtr, buf) {
       readAsmConstArgsArray.length = 0;
@@ -10919,6 +11030,7 @@ var asmLibraryArg = {
   "__sys_getdents64": ___sys_getdents64,
   "__sys_getpid": ___sys_getpid,
   "__sys_ioctl": ___sys_ioctl,
+  "__sys_lstat64": ___sys_lstat64,
   "__sys_mkdir": ___sys_mkdir,
   "__sys_open": ___sys_open,
   "__sys_rename": ___sys_rename,
@@ -11177,7 +11289,6 @@ var asmLibraryArg = {
   "emscripten_set_visibilitychange_callback_on_thread": _emscripten_set_visibilitychange_callback_on_thread,
   "emscripten_set_wheel_callback_on_thread": _emscripten_set_wheel_callback_on_thread,
   "emscripten_sleep": _emscripten_sleep,
-  "emscripten_thread_sleep": _emscripten_thread_sleep,
   "environ_get": _environ_get,
   "environ_sizes_get": _environ_sizes_get,
   "exit": _exit,
@@ -11187,8 +11298,11 @@ var asmLibraryArg = {
   "fd_write": _fd_write,
   "getTempRet0": _getTempRet0,
   "gettimeofday": _gettimeofday,
+  "invoke_dd": invoke_dd,
   "invoke_di": invoke_di,
   "invoke_dii": invoke_dii,
+  "invoke_diii": invoke_diii,
+  "invoke_fiii": invoke_fiii,
   "invoke_i": invoke_i,
   "invoke_id": invoke_id,
   "invoke_ii": invoke_ii,
@@ -11202,26 +11316,33 @@ var asmLibraryArg = {
   "invoke_iiiiiiii": invoke_iiiiiiii,
   "invoke_iiiiiiiii": invoke_iiiiiiiii,
   "invoke_iiiiiiiiii": invoke_iiiiiiiiii,
+  "invoke_iiiiiiiiiii": invoke_iiiiiiiiiii,
   "invoke_iiiiiiiiiiii": invoke_iiiiiiiiiiii,
+  "invoke_iiiiiiiiiiiii": invoke_iiiiiiiiiiiii,
   "invoke_iiiiiiiiiiiiiii": invoke_iiiiiiiiiiiiiii,
   "invoke_iiiiiiiiiiiiiiiiiii": invoke_iiiiiiiiiiiiiiiiiii,
   "invoke_iiiiji": invoke_iiiiji,
   "invoke_iiiijii": invoke_iiiijii,
   "invoke_iiiijiii": invoke_iiiijiii,
-  "invoke_iiij": invoke_iiij,
   "invoke_iiiji": invoke_iiiji,
   "invoke_iij": invoke_iij,
+  "invoke_iiji": invoke_iiji,
+  "invoke_iijii": invoke_iijii,
   "invoke_iijiidddddiii": invoke_iijiidddddiii,
   "invoke_iijiiid": invoke_iijiiid,
   "invoke_iijiiiiiiffi": invoke_iijiiiiiiffi,
+  "invoke_j": invoke_j,
   "invoke_ji": invoke_ji,
-  "invoke_jii": invoke_jii,
+  "invoke_jiii": invoke_jiii,
+  "invoke_jiiii": invoke_jiiii,
+  "invoke_jij": invoke_jij,
   "invoke_jiji": invoke_jiji,
-  "invoke_jijii": invoke_jijii,
   "invoke_v": invoke_v,
   "invoke_vi": invoke_vi,
   "invoke_vid": invoke_vid,
   "invoke_vii": invoke_vii,
+  "invoke_viiffff": invoke_viiffff,
+  "invoke_viiffffffff": invoke_viiffffffff,
   "invoke_viii": invoke_viii,
   "invoke_viiii": invoke_viiii,
   "invoke_viiiii": invoke_viiiii,
@@ -11229,6 +11350,7 @@ var asmLibraryArg = {
   "invoke_viiiiiif": invoke_viiiiiif,
   "invoke_viiiiiii": invoke_viiiiiii,
   "invoke_viiiiiiid": invoke_viiiiiiid,
+  "invoke_viiiiiiifi": invoke_viiiiiiifi,
   "invoke_viiiiiiii": invoke_viiiiiiii,
   "invoke_viiiiiiiii": invoke_viiiiiiiii,
   "invoke_viiiiiiiiii": invoke_viiiiiiiiii,
@@ -11236,23 +11358,35 @@ var asmLibraryArg = {
   "invoke_viiiiiiiiiiii": invoke_viiiiiiiiiiii,
   "invoke_viiiiiiiiiiiiiii": invoke_viiiiiiiiiiiiiii,
   "invoke_viiiiiiiiiiiiiiii": invoke_viiiiiiiiiiiiiiii,
-  "invoke_viiiiij": invoke_viiiiij,
   "invoke_viij": invoke_viij,
   "invoke_vij": invoke_vij,
   "invoke_vijj": invoke_vijj,
   "invoke_vijji": invoke_vijji,
   "llvm_eh_typeid_for": _llvm_eh_typeid_for,
+  "memory": wasmMemory,
   "mktime": _mktime,
+  "nanosleep": _nanosleep,
   "setTempRet0": _setTempRet0,
   "sigaction": _sigaction,
   "signal": _signal,
   "strftime_l": _strftime_l,
-  "time": _time
+  "time": _time,
+  "utimes": _utimes
 };
 var asm = createWasm();
 /** @type {function(...*):?} */
 var ___wasm_call_ctors = Module["___wasm_call_ctors"] = function() {
   return (___wasm_call_ctors = Module["___wasm_call_ctors"] = Module["asm"]["__wasm_call_ctors"]).apply(null, arguments);
+};
+
+/** @type {function(...*):?} */
+var _memcpy = Module["_memcpy"] = function() {
+  return (_memcpy = Module["_memcpy"] = Module["asm"]["memcpy"]).apply(null, arguments);
+};
+
+/** @type {function(...*):?} */
+var _memset = Module["_memset"] = function() {
+  return (_memset = Module["_memset"] = Module["asm"]["memset"]).apply(null, arguments);
 };
 
 /** @type {function(...*):?} */
@@ -11286,6 +11420,16 @@ var _fflush = Module["_fflush"] = function() {
 };
 
 /** @type {function(...*):?} */
+var _testSetjmp = Module["_testSetjmp"] = function() {
+  return (_testSetjmp = Module["_testSetjmp"] = Module["asm"]["testSetjmp"]).apply(null, arguments);
+};
+
+/** @type {function(...*):?} */
+var _saveSetjmp = Module["_saveSetjmp"] = function() {
+  return (_saveSetjmp = Module["_saveSetjmp"] = Module["asm"]["saveSetjmp"]).apply(null, arguments);
+};
+
+/** @type {function(...*):?} */
 var _main = Module["_main"] = function() {
   return (_main = Module["_main"] = Module["asm"]["main"]).apply(null, arguments);
 };
@@ -11303,16 +11447,6 @@ var ___embind_register_native_and_builtin_types = Module["___embind_register_nat
 /** @type {function(...*):?} */
 var _emscripten_GetProcAddress = Module["_emscripten_GetProcAddress"] = function() {
   return (_emscripten_GetProcAddress = Module["_emscripten_GetProcAddress"] = Module["asm"]["emscripten_GetProcAddress"]).apply(null, arguments);
-};
-
-/** @type {function(...*):?} */
-var _memset = Module["_memset"] = function() {
-  return (_memset = Module["_memset"] = Module["asm"]["memset"]).apply(null, arguments);
-};
-
-/** @type {function(...*):?} */
-var _memcpy = Module["_memcpy"] = function() {
-  return (_memcpy = Module["_memcpy"] = Module["asm"]["memcpy"]).apply(null, arguments);
 };
 
 /** @type {function(...*):?} */
@@ -11346,16 +11480,6 @@ var stackAlloc = Module["stackAlloc"] = function() {
 };
 
 /** @type {function(...*):?} */
-var _saveSetjmp = Module["_saveSetjmp"] = function() {
-  return (_saveSetjmp = Module["_saveSetjmp"] = Module["asm"]["saveSetjmp"]).apply(null, arguments);
-};
-
-/** @type {function(...*):?} */
-var _testSetjmp = Module["_testSetjmp"] = function() {
-  return (_testSetjmp = Module["_testSetjmp"] = Module["asm"]["testSetjmp"]).apply(null, arguments);
-};
-
-/** @type {function(...*):?} */
 var _setThrew = Module["_setThrew"] = function() {
   return (_setThrew = Module["_setThrew"] = Module["asm"]["setThrew"]).apply(null, arguments);
 };
@@ -11381,6 +11505,11 @@ var dynCall_ji = Module["dynCall_ji"] = function() {
 };
 
 /** @type {function(...*):?} */
+var dynCall_j = Module["dynCall_j"] = function() {
+  return (dynCall_j = Module["dynCall_j"] = Module["asm"]["dynCall_j"]).apply(null, arguments);
+};
+
+/** @type {function(...*):?} */
 var dynCall_vijj = Module["dynCall_vijj"] = function() {
   return (dynCall_vijj = Module["dynCall_vijj"] = Module["asm"]["dynCall_vijj"]).apply(null, arguments);
 };
@@ -11388,6 +11517,21 @@ var dynCall_vijj = Module["dynCall_vijj"] = function() {
 /** @type {function(...*):?} */
 var dynCall_vij = Module["dynCall_vij"] = function() {
   return (dynCall_vij = Module["dynCall_vij"] = Module["asm"]["dynCall_vij"]).apply(null, arguments);
+};
+
+/** @type {function(...*):?} */
+var dynCall_jiji = Module["dynCall_jiji"] = function() {
+  return (dynCall_jiji = Module["dynCall_jiji"] = Module["asm"]["dynCall_jiji"]).apply(null, arguments);
+};
+
+/** @type {function(...*):?} */
+var dynCall_iij = Module["dynCall_iij"] = function() {
+  return (dynCall_iij = Module["dynCall_iij"] = Module["asm"]["dynCall_iij"]).apply(null, arguments);
+};
+
+/** @type {function(...*):?} */
+var dynCall_iiji = Module["dynCall_iiji"] = function() {
+  return (dynCall_iiji = Module["dynCall_iiji"] = Module["asm"]["dynCall_iiji"]).apply(null, arguments);
 };
 
 /** @type {function(...*):?} */
@@ -11401,8 +11545,8 @@ var dynCall_iiiji = Module["dynCall_iiiji"] = function() {
 };
 
 /** @type {function(...*):?} */
-var dynCall_iij = Module["dynCall_iij"] = function() {
-  return (dynCall_iij = Module["dynCall_iij"] = Module["asm"]["dynCall_iij"]).apply(null, arguments);
+var dynCall_iijii = Module["dynCall_iijii"] = function() {
+  return (dynCall_iijii = Module["dynCall_iijii"] = Module["asm"]["dynCall_iijii"]).apply(null, arguments);
 };
 
 /** @type {function(...*):?} */
@@ -11411,13 +11555,8 @@ var dynCall_vijji = Module["dynCall_vijji"] = function() {
 };
 
 /** @type {function(...*):?} */
-var dynCall_iiiijiii = Module["dynCall_iiiijiii"] = function() {
-  return (dynCall_iiiijiii = Module["dynCall_iiiijiii"] = Module["asm"]["dynCall_iiiijiii"]).apply(null, arguments);
-};
-
-/** @type {function(...*):?} */
-var dynCall_iiiijii = Module["dynCall_iiiijii"] = function() {
-  return (dynCall_iiiijii = Module["dynCall_iiiijii"] = Module["asm"]["dynCall_iiiijii"]).apply(null, arguments);
+var dynCall_viijii = Module["dynCall_viijii"] = function() {
+  return (dynCall_viijii = Module["dynCall_viijii"] = Module["asm"]["dynCall_viijii"]).apply(null, arguments);
 };
 
 /** @type {function(...*):?} */
@@ -11426,8 +11565,18 @@ var dynCall_iiiiji = Module["dynCall_iiiiji"] = function() {
 };
 
 /** @type {function(...*):?} */
-var dynCall_jiji = Module["dynCall_jiji"] = function() {
-  return (dynCall_jiji = Module["dynCall_jiji"] = Module["asm"]["dynCall_jiji"]).apply(null, arguments);
+var dynCall_iiiijii = Module["dynCall_iiiijii"] = function() {
+  return (dynCall_iiiijii = Module["dynCall_iiiijii"] = Module["asm"]["dynCall_iiiijii"]).apply(null, arguments);
+};
+
+/** @type {function(...*):?} */
+var dynCall_iiiijiii = Module["dynCall_iiiijiii"] = function() {
+  return (dynCall_iiiijiii = Module["dynCall_iiiijiii"] = Module["asm"]["dynCall_iiiijiii"]).apply(null, arguments);
+};
+
+/** @type {function(...*):?} */
+var dynCall_jij = Module["dynCall_jij"] = function() {
+  return (dynCall_jij = Module["dynCall_jij"] = Module["asm"]["dynCall_jij"]).apply(null, arguments);
 };
 
 /** @type {function(...*):?} */
@@ -11436,53 +11585,23 @@ var dynCall_iijiiiiiiffi = Module["dynCall_iijiiiiiiffi"] = function() {
 };
 
 /** @type {function(...*):?} */
-var dynCall_iijiiid = Module["dynCall_iijiiid"] = function() {
-  return (dynCall_iijiiid = Module["dynCall_iijiiid"] = Module["asm"]["dynCall_iijiiid"]).apply(null, arguments);
-};
-
-/** @type {function(...*):?} */
 var dynCall_iijiidddddiii = Module["dynCall_iijiidddddiii"] = function() {
   return (dynCall_iijiidddddiii = Module["dynCall_iijiidddddiii"] = Module["asm"]["dynCall_iijiidddddiii"]).apply(null, arguments);
 };
 
 /** @type {function(...*):?} */
-var dynCall_iiji = Module["dynCall_iiji"] = function() {
-  return (dynCall_iiji = Module["dynCall_iiji"] = Module["asm"]["dynCall_iiji"]).apply(null, arguments);
+var dynCall_iijiiid = Module["dynCall_iijiiid"] = function() {
+  return (dynCall_iijiiid = Module["dynCall_iijiiid"] = Module["asm"]["dynCall_iijiiid"]).apply(null, arguments);
 };
 
 /** @type {function(...*):?} */
-var dynCall_jii = Module["dynCall_jii"] = function() {
-  return (dynCall_jii = Module["dynCall_jii"] = Module["asm"]["dynCall_jii"]).apply(null, arguments);
+var dynCall_jiii = Module["dynCall_jiii"] = function() {
+  return (dynCall_jiii = Module["dynCall_jiii"] = Module["asm"]["dynCall_jiii"]).apply(null, arguments);
 };
 
 /** @type {function(...*):?} */
-var dynCall_iiij = Module["dynCall_iiij"] = function() {
-  return (dynCall_iiij = Module["dynCall_iiij"] = Module["asm"]["dynCall_iiij"]).apply(null, arguments);
-};
-
-/** @type {function(...*):?} */
-var dynCall_viiiiij = Module["dynCall_viiiiij"] = function() {
-  return (dynCall_viiiiij = Module["dynCall_viiiiij"] = Module["asm"]["dynCall_viiiiij"]).apply(null, arguments);
-};
-
-/** @type {function(...*):?} */
-var dynCall_viijii = Module["dynCall_viijii"] = function() {
-  return (dynCall_viijii = Module["dynCall_viijii"] = Module["asm"]["dynCall_viijii"]).apply(null, arguments);
-};
-
-/** @type {function(...*):?} */
-var dynCall_vijii = Module["dynCall_vijii"] = function() {
-  return (dynCall_vijii = Module["dynCall_vijii"] = Module["asm"]["dynCall_vijii"]).apply(null, arguments);
-};
-
-/** @type {function(...*):?} */
-var dynCall_jijii = Module["dynCall_jijii"] = function() {
-  return (dynCall_jijii = Module["dynCall_jijii"] = Module["asm"]["dynCall_jijii"]).apply(null, arguments);
-};
-
-/** @type {function(...*):?} */
-var dynCall_iiiiiijj = Module["dynCall_iiiiiijj"] = function() {
-  return (dynCall_iiiiiijj = Module["dynCall_iiiiiijj"] = Module["asm"]["dynCall_iiiiiijj"]).apply(null, arguments);
+var dynCall_jiiii = Module["dynCall_jiiii"] = function() {
+  return (dynCall_jiiii = Module["dynCall_jiiii"] = Module["asm"]["dynCall_jiiii"]).apply(null, arguments);
 };
 
 /** @type {function(...*):?} */
@@ -11495,6 +11614,22 @@ var dynCall_iiiiijj = Module["dynCall_iiiiijj"] = function() {
   return (dynCall_iiiiijj = Module["dynCall_iiiiijj"] = Module["asm"]["dynCall_iiiiijj"]).apply(null, arguments);
 };
 
+/** @type {function(...*):?} */
+var dynCall_iiiiiijj = Module["dynCall_iiiiiijj"] = function() {
+  return (dynCall_iiiiiijj = Module["dynCall_iiiiiijj"] = Module["asm"]["dynCall_iiiiiijj"]).apply(null, arguments);
+};
+
+
+function invoke_vi(index,a1) {
+  var sp = stackSave();
+  try {
+    wasmTable.get(index)(a1);
+  } catch(e) {
+    stackRestore(sp);
+    if (e !== e+0 && e !== 'longjmp') throw e;
+    _setThrew(1, 0);
+  }
+}
 
 function invoke_iiii(index,a1,a2,a3) {
   var sp = stackSave();
@@ -11529,10 +11664,10 @@ function invoke_iii(index,a1,a2) {
   }
 }
 
-function invoke_ii(index,a1) {
+function invoke_viii(index,a1,a2,a3) {
   var sp = stackSave();
   try {
-    return wasmTable.get(index)(a1);
+    wasmTable.get(index)(a1,a2,a3);
   } catch(e) {
     stackRestore(sp);
     if (e !== e+0 && e !== 'longjmp') throw e;
@@ -11551,21 +11686,10 @@ function invoke_iiiiiiiii(index,a1,a2,a3,a4,a5,a6,a7,a8) {
   }
 }
 
-function invoke_vi(index,a1) {
+function invoke_ii(index,a1) {
   var sp = stackSave();
   try {
-    wasmTable.get(index)(a1);
-  } catch(e) {
-    stackRestore(sp);
-    if (e !== e+0 && e !== 'longjmp') throw e;
-    _setThrew(1, 0);
-  }
-}
-
-function invoke_viii(index,a1,a2,a3) {
-  var sp = stackSave();
-  try {
-    wasmTable.get(index)(a1,a2,a3);
+    return wasmTable.get(index)(a1);
   } catch(e) {
     stackRestore(sp);
     if (e !== e+0 && e !== 'longjmp') throw e;
@@ -11617,10 +11741,32 @@ function invoke_i(index) {
   }
 }
 
-function invoke_viiiii(index,a1,a2,a3,a4,a5) {
+function invoke_iiiiii(index,a1,a2,a3,a4,a5) {
   var sp = stackSave();
   try {
-    wasmTable.get(index)(a1,a2,a3,a4,a5);
+    return wasmTable.get(index)(a1,a2,a3,a4,a5);
+  } catch(e) {
+    stackRestore(sp);
+    if (e !== e+0 && e !== 'longjmp') throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_viiiiiiii(index,a1,a2,a3,a4,a5,a6,a7,a8) {
+  var sp = stackSave();
+  try {
+    wasmTable.get(index)(a1,a2,a3,a4,a5,a6,a7,a8);
+  } catch(e) {
+    stackRestore(sp);
+    if (e !== e+0 && e !== 'longjmp') throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_viiii(index,a1,a2,a3,a4) {
+  var sp = stackSave();
+  try {
+    wasmTable.get(index)(a1,a2,a3,a4);
   } catch(e) {
     stackRestore(sp);
     if (e !== e+0 && e !== 'longjmp') throw e;
@@ -11639,32 +11785,10 @@ function invoke_iiiii(index,a1,a2,a3,a4) {
   }
 }
 
-function invoke_iiiiii(index,a1,a2,a3,a4,a5) {
+function invoke_viiiii(index,a1,a2,a3,a4,a5) {
   var sp = stackSave();
   try {
-    return wasmTable.get(index)(a1,a2,a3,a4,a5);
-  } catch(e) {
-    stackRestore(sp);
-    if (e !== e+0 && e !== 'longjmp') throw e;
-    _setThrew(1, 0);
-  }
-}
-
-function invoke_viiiiiii(index,a1,a2,a3,a4,a5,a6,a7) {
-  var sp = stackSave();
-  try {
-    wasmTable.get(index)(a1,a2,a3,a4,a5,a6,a7);
-  } catch(e) {
-    stackRestore(sp);
-    if (e !== e+0 && e !== 'longjmp') throw e;
-    _setThrew(1, 0);
-  }
-}
-
-function invoke_viiii(index,a1,a2,a3,a4) {
-  var sp = stackSave();
-  try {
-    wasmTable.get(index)(a1,a2,a3,a4);
+    wasmTable.get(index)(a1,a2,a3,a4,a5);
   } catch(e) {
     stackRestore(sp);
     if (e !== e+0 && e !== 'longjmp') throw e;
@@ -11694,10 +11818,10 @@ function invoke_iid(index,a1,a2) {
   }
 }
 
-function invoke_viiiiiiii(index,a1,a2,a3,a4,a5,a6,a7,a8) {
+function invoke_viiiiiii(index,a1,a2,a3,a4,a5,a6,a7) {
   var sp = stackSave();
   try {
-    wasmTable.get(index)(a1,a2,a3,a4,a5,a6,a7,a8);
+    wasmTable.get(index)(a1,a2,a3,a4,a5,a6,a7);
   } catch(e) {
     stackRestore(sp);
     if (e !== e+0 && e !== 'longjmp') throw e;
@@ -11709,17 +11833,6 @@ function invoke_iiiiiiiiiiiiiiiiiii(index,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12
   var sp = stackSave();
   try {
     return wasmTable.get(index)(a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15,a16,a17,a18);
-  } catch(e) {
-    stackRestore(sp);
-    if (e !== e+0 && e !== 'longjmp') throw e;
-    _setThrew(1, 0);
-  }
-}
-
-function invoke_iiiiiiiiii(index,a1,a2,a3,a4,a5,a6,a7,a8,a9) {
-  var sp = stackSave();
-  try {
-    return wasmTable.get(index)(a1,a2,a3,a4,a5,a6,a7,a8,a9);
   } catch(e) {
     stackRestore(sp);
     if (e !== e+0 && e !== 'longjmp') throw e;
@@ -11742,6 +11855,28 @@ function invoke_id(index,a1) {
   var sp = stackSave();
   try {
     return wasmTable.get(index)(a1);
+  } catch(e) {
+    stackRestore(sp);
+    if (e !== e+0 && e !== 'longjmp') throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_iiiiiiiiii(index,a1,a2,a3,a4,a5,a6,a7,a8,a9) {
+  var sp = stackSave();
+  try {
+    return wasmTable.get(index)(a1,a2,a3,a4,a5,a6,a7,a8,a9);
+  } catch(e) {
+    stackRestore(sp);
+    if (e !== e+0 && e !== 'longjmp') throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_viiiiiiiii(index,a1,a2,a3,a4,a5,a6,a7,a8,a9) {
+  var sp = stackSave();
+  try {
+    wasmTable.get(index)(a1,a2,a3,a4,a5,a6,a7,a8,a9);
   } catch(e) {
     stackRestore(sp);
     if (e !== e+0 && e !== 'longjmp') throw e;
@@ -11815,6 +11950,17 @@ function invoke_viiiiiiiiiii(index,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11) {
   }
 }
 
+function invoke_viiiiiiifi(index,a1,a2,a3,a4,a5,a6,a7,a8,a9) {
+  var sp = stackSave();
+  try {
+    wasmTable.get(index)(a1,a2,a3,a4,a5,a6,a7,a8,a9);
+  } catch(e) {
+    stackRestore(sp);
+    if (e !== e+0 && e !== 'longjmp') throw e;
+    _setThrew(1, 0);
+  }
+}
+
 function invoke_viiiiiiid(index,a1,a2,a3,a4,a5,a6,a7,a8) {
   var sp = stackSave();
   try {
@@ -11830,6 +11976,28 @@ function invoke_viiiiiif(index,a1,a2,a3,a4,a5,a6,a7) {
   var sp = stackSave();
   try {
     wasmTable.get(index)(a1,a2,a3,a4,a5,a6,a7);
+  } catch(e) {
+    stackRestore(sp);
+    if (e !== e+0 && e !== 'longjmp') throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_viiffffffff(index,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10) {
+  var sp = stackSave();
+  try {
+    wasmTable.get(index)(a1,a2,a3,a4,a5,a6,a7,a8,a9,a10);
+  } catch(e) {
+    stackRestore(sp);
+    if (e !== e+0 && e !== 'longjmp') throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_viiffff(index,a1,a2,a3,a4,a5,a6) {
+  var sp = stackSave();
+  try {
+    wasmTable.get(index)(a1,a2,a3,a4,a5,a6);
   } catch(e) {
     stackRestore(sp);
     if (e !== e+0 && e !== 'longjmp') throw e;
@@ -11859,10 +12027,10 @@ function invoke_iiiiiiifi(index,a1,a2,a3,a4,a5,a6,a7,a8) {
   }
 }
 
-function invoke_viiiiiiiii(index,a1,a2,a3,a4,a5,a6,a7,a8,a9) {
+function invoke_vid(index,a1,a2) {
   var sp = stackSave();
   try {
-    wasmTable.get(index)(a1,a2,a3,a4,a5,a6,a7,a8,a9);
+    wasmTable.get(index)(a1,a2);
   } catch(e) {
     stackRestore(sp);
     if (e !== e+0 && e !== 'longjmp') throw e;
@@ -11870,10 +12038,54 @@ function invoke_viiiiiiiii(index,a1,a2,a3,a4,a5,a6,a7,a8,a9) {
   }
 }
 
-function invoke_vid(index,a1,a2) {
+function invoke_dd(index,a1) {
   var sp = stackSave();
   try {
-    wasmTable.get(index)(a1,a2);
+    return wasmTable.get(index)(a1);
+  } catch(e) {
+    stackRestore(sp);
+    if (e !== e+0 && e !== 'longjmp') throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_iiiiiiiiiii(index,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10) {
+  var sp = stackSave();
+  try {
+    return wasmTable.get(index)(a1,a2,a3,a4,a5,a6,a7,a8,a9,a10);
+  } catch(e) {
+    stackRestore(sp);
+    if (e !== e+0 && e !== 'longjmp') throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_iiiiiiiiiiiii(index,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12) {
+  var sp = stackSave();
+  try {
+    return wasmTable.get(index)(a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12);
+  } catch(e) {
+    stackRestore(sp);
+    if (e !== e+0 && e !== 'longjmp') throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_fiii(index,a1,a2,a3) {
+  var sp = stackSave();
+  try {
+    return wasmTable.get(index)(a1,a2,a3);
+  } catch(e) {
+    stackRestore(sp);
+    if (e !== e+0 && e !== 'longjmp') throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_diii(index,a1,a2,a3) {
+  var sp = stackSave();
+  try {
+    return wasmTable.get(index)(a1,a2,a3);
   } catch(e) {
     stackRestore(sp);
     if (e !== e+0 && e !== 'longjmp') throw e;
@@ -11896,6 +12108,17 @@ function invoke_ji(index,a1) {
   var sp = stackSave();
   try {
     return dynCall_ji(index,a1);
+  } catch(e) {
+    stackRestore(sp);
+    if (e !== e+0 && e !== 'longjmp') throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_j(index) {
+  var sp = stackSave();
+  try {
+    return dynCall_j(index);
   } catch(e) {
     stackRestore(sp);
     if (e !== e+0 && e !== 'longjmp') throw e;
@@ -11969,32 +12192,21 @@ function invoke_iij(index,a1,a2,a3) {
   }
 }
 
+function invoke_iijii(index,a1,a2,a3,a4,a5) {
+  var sp = stackSave();
+  try {
+    return dynCall_iijii(index,a1,a2,a3,a4,a5);
+  } catch(e) {
+    stackRestore(sp);
+    if (e !== e+0 && e !== 'longjmp') throw e;
+    _setThrew(1, 0);
+  }
+}
+
 function invoke_vijji(index,a1,a2,a3,a4,a5,a6) {
   var sp = stackSave();
   try {
     dynCall_vijji(index,a1,a2,a3,a4,a5,a6);
-  } catch(e) {
-    stackRestore(sp);
-    if (e !== e+0 && e !== 'longjmp') throw e;
-    _setThrew(1, 0);
-  }
-}
-
-function invoke_iiiijiii(index,a1,a2,a3,a4,a5,a6,a7,a8) {
-  var sp = stackSave();
-  try {
-    return dynCall_iiiijiii(index,a1,a2,a3,a4,a5,a6,a7,a8);
-  } catch(e) {
-    stackRestore(sp);
-    if (e !== e+0 && e !== 'longjmp') throw e;
-    _setThrew(1, 0);
-  }
-}
-
-function invoke_iiiijii(index,a1,a2,a3,a4,a5,a6,a7) {
-  var sp = stackSave();
-  try {
-    return dynCall_iiiijii(index,a1,a2,a3,a4,a5,a6,a7);
   } catch(e) {
     stackRestore(sp);
     if (e !== e+0 && e !== 'longjmp') throw e;
@@ -12013,10 +12225,10 @@ function invoke_iiiiji(index,a1,a2,a3,a4,a5,a6) {
   }
 }
 
-function invoke_iijiiiiiiffi(index,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12) {
+function invoke_iiiijii(index,a1,a2,a3,a4,a5,a6,a7) {
   var sp = stackSave();
   try {
-    return dynCall_iijiiiiiiffi(index,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12);
+    return dynCall_iiiijii(index,a1,a2,a3,a4,a5,a6,a7);
   } catch(e) {
     stackRestore(sp);
     if (e !== e+0 && e !== 'longjmp') throw e;
@@ -12024,10 +12236,32 @@ function invoke_iijiiiiiiffi(index,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12) {
   }
 }
 
-function invoke_iijiiid(index,a1,a2,a3,a4,a5,a6,a7) {
+function invoke_iiiijiii(index,a1,a2,a3,a4,a5,a6,a7,a8) {
   var sp = stackSave();
   try {
-    return dynCall_iijiiid(index,a1,a2,a3,a4,a5,a6,a7);
+    return dynCall_iiiijiii(index,a1,a2,a3,a4,a5,a6,a7,a8);
+  } catch(e) {
+    stackRestore(sp);
+    if (e !== e+0 && e !== 'longjmp') throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_jij(index,a1,a2,a3) {
+  var sp = stackSave();
+  try {
+    return dynCall_jij(index,a1,a2,a3);
+  } catch(e) {
+    stackRestore(sp);
+    if (e !== e+0 && e !== 'longjmp') throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_iijiiiiiiffi(index,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12) {
+  var sp = stackSave();
+  try {
+    return dynCall_iijiiiiiiffi(index,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12);
   } catch(e) {
     stackRestore(sp);
     if (e !== e+0 && e !== 'longjmp') throw e;
@@ -12046,10 +12280,10 @@ function invoke_iijiidddddiii(index,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13) 
   }
 }
 
-function invoke_jii(index,a1,a2) {
+function invoke_iijiiid(index,a1,a2,a3,a4,a5,a6,a7) {
   var sp = stackSave();
   try {
-    return dynCall_jii(index,a1,a2);
+    return dynCall_iijiiid(index,a1,a2,a3,a4,a5,a6,a7);
   } catch(e) {
     stackRestore(sp);
     if (e !== e+0 && e !== 'longjmp') throw e;
@@ -12057,10 +12291,10 @@ function invoke_jii(index,a1,a2) {
   }
 }
 
-function invoke_jijii(index,a1,a2,a3,a4,a5) {
+function invoke_iiji(index,a1,a2,a3,a4) {
   var sp = stackSave();
   try {
-    return dynCall_jijii(index,a1,a2,a3,a4,a5);
+    return dynCall_iiji(index,a1,a2,a3,a4);
   } catch(e) {
     stackRestore(sp);
     if (e !== e+0 && e !== 'longjmp') throw e;
@@ -12068,10 +12302,10 @@ function invoke_jijii(index,a1,a2,a3,a4,a5) {
   }
 }
 
-function invoke_iiij(index,a1,a2,a3,a4) {
+function invoke_jiii(index,a1,a2,a3) {
   var sp = stackSave();
   try {
-    return dynCall_iiij(index,a1,a2,a3,a4);
+    return dynCall_jiii(index,a1,a2,a3);
   } catch(e) {
     stackRestore(sp);
     if (e !== e+0 && e !== 'longjmp') throw e;
@@ -12079,10 +12313,10 @@ function invoke_iiij(index,a1,a2,a3,a4) {
   }
 }
 
-function invoke_viiiiij(index,a1,a2,a3,a4,a5,a6,a7) {
+function invoke_jiiii(index,a1,a2,a3,a4) {
   var sp = stackSave();
   try {
-    dynCall_viiiiij(index,a1,a2,a3,a4,a5,a6,a7);
+    return dynCall_jiiii(index,a1,a2,a3,a4);
   } catch(e) {
     stackRestore(sp);
     if (e !== e+0 && e !== 'longjmp') throw e;
