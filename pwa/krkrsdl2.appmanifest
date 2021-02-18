@@ -5,7 +5,7 @@
     "display": "standalone",
     "background_color": "black",
     "description": "鱧天 for 吉里吉里SDL2",
-    "orientation": "portrait-primary",
+    "orientation": "landscape",
     "gcm_sender_id": "103953800507",
     "icons": [
         {

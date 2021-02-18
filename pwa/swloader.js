@@ -13,5 +13,10 @@ new class {
     loadManifest(url) {
         let manifest = document.head.querySelector('#krkrsdl2-web-manifest');
         manifest.setAttribute('href', url);
+        fetch(url).then(res=>res.json()).then(json=>{
+            if(json.orientation){
+                return ScreenOrientation.lock(json.orientation);
+            }
+        })
     }
 }
