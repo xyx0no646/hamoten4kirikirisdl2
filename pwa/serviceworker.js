@@ -52,6 +52,10 @@ self.addEventListener('fetch', event => {
                                 res.headers.get("ETag") != headreq.headers.get("ETag")) {
                                 return fetchAndAdd(event.request);
                             }
+                            // キャッシュにetagなし　アクセスする
+                            else if (!res.headers.get("ETag")){
+                                return fetchAndAdd(event.request);
+                            }
                             // 更新なし　キャッシュを戻す
                             else {
                                 return res;
