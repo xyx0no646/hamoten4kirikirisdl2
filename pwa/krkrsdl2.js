@@ -6926,7 +6926,6 @@ var ASM_CONSTS = {
         var canvas = Module['canvas'];
         Browser.resizeListeners.forEach(function(listener) {
           listener(canvas.width, canvas.height);
-          if (location.href.endsWith("pwa")) window.resizeTo(anvas.width, canvas.height);
         });
       },setCanvasSize:function(width, height, noUpdates) {
         var canvas = Module['canvas'];
@@ -6941,6 +6940,7 @@ var ASM_CONSTS = {
         }
         Browser.updateCanvasDimensions(Module['canvas']);
         Browser.updateResizeListeners();
+        if (location.href.endsWith("pwa")) window.resizeTo(width,height);
       },setWindowedCanvasSize:function() {
         // check if SDL is available
         if (typeof SDL != "undefined") {
