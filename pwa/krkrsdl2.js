@@ -6926,6 +6926,7 @@ var ASM_CONSTS = {
         var canvas = Module['canvas'];
         Browser.resizeListeners.forEach(function(listener) {
           listener(canvas.width, canvas.height);
+          if (location.href.endsWith("pwa")) window.resizeTo(anvas.width, canvas.height);
         });
       },setCanvasSize:function(width, height, noUpdates) {
         var canvas = Module['canvas'];
